@@ -25,6 +25,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/publish-gith
 
 脚本扫描暂存源码并生成 `windows/artifacts/CodexMeter-Windows-source.zip`，拒绝认证／私钥／用户数据库与产物入库。没有 GitHub CLI 时，从官方 Release 下载并校验 SHA-256；随后走 GitHub 浏览器授权，按已登录的 GitHub 身份填写本地提交信息，创建公开仓库并推送 main。不会读取 Chrome 凭据、覆盖不相关 origin 或强推；遇到已有同名仓库且无匹配 origin 时停止。可用 `-PrepareOnly` 离线生成源码包。
 
+仓库可能由 Codex 沙箱账号创建，普通用户运行 Git 时会遇到 `detected dubious ownership`。发布脚本通过 Git 的进程配置，仅把自身项目的绝对路径加入本次执行的 `safe.directory`，并传给 GitHub CLI 的 Git 子进程；正常结束或报错后恢复原环境。不修改全局信任列表，也不需要管理员权限。该处理不赋予额外文件写入权限。`publish-ownership-smoke.ps1` 在隔离夹具中验证同类拒绝、源码打包、既有配置保留与异常退出恢复。
+
 首次 main 构建通过并检查 artifacts 后，再创建发行标签：
 
 ```powershell

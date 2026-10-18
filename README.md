@@ -11,4 +11,6 @@ Windows 任务栏与托盘客户端，参考 [raycalrui/CodexMeter](https://gith
 
 计划发布到公开仓库 `bsxucome/CodexMeter-Windows`。本次已准备本地 Git、源码归档和浏览器授权发布脚本；当前环境网络与 GitHub 授权不可用，**仓库尚未创建或推送**。操作见 [GitHub 发布说明](windows/RELEASES.md)，正常桌面待验收项目见 [ACCEPTANCE.md](windows/ACCEPTANCE.md)。
 
+发布脚本已处理沙箱账号创建仓库后，普通用户运行时的 Git 所有权检查；只为本次执行信任该项目路径。
+
 此工作目录包含新增的 Windows 客户端，**不是完整上游克隆**。当前环境无法通过 Git 下载仓库；macOS 文件未复制或修改。来源及同步限制见 [UPSTREAM.md](UPSTREAM.md)。

@@ -2,6 +2,8 @@
 
 Verified on 2026-10-18, Windows 11 x64.
 
+Publication tooling follow-up, 2026-10-19: publish-ownership-smoke.ps1 uses Git's foreign-owner test mode with an isolated global config and a fixture path containing spaces. It reproduces dubious ownership, then verifies successful source preparation with zero and one pre-existing runtime config entries, exact environment restoration, unchanged global config and restored ownership rejection after the script exits. An intentional user-data staging failure also restores configuration. This does not claim GitHub login or remote push success. Application code and portable binaries are unchanged.
+
 ## Final release checks
 
 | Check | Result |

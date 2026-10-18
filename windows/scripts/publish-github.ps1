@@ -6,6 +6,20 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$projectRoot = [IO.Path]::GetFullPath($projectRoot)
+# GitHub CLI also starts Git. Inherit an exact-directory exception in this
+# process tree instead of changing the user's global Git configuration.
+$originalGitCount = [Environment]::GetEnvironmentVariable('GIT_CONFIG_COUNT', 'Process')
+$gitCount = 0
+if ($originalGitCount -and (![int]::TryParse($originalGitCount, [ref]$gitCount) -or $gitCount -lt 0 -or $gitCount -eq [int]::MaxValue)) { throw 'Invalid GIT_CONFIG_COUNT.' }
+$gitKeyName = "GIT_CONFIG_KEY_$gitCount"
+$gitValueName = "GIT_CONFIG_VALUE_$gitCount"
+$originalGitKey = [Environment]::GetEnvironmentVariable($gitKeyName, 'Process')
+$originalGitValue = [Environment]::GetEnvironmentVariable($gitValueName, 'Process')
+try {
+[Environment]::SetEnvironmentVariable($gitKeyName, 'safe.directory', 'Process')
+[Environment]::SetEnvironmentVariable($gitValueName, $projectRoot.Replace('\','/'), 'Process')
+[Environment]::SetEnvironmentVariable('GIT_CONFIG_COUNT', ($gitCount + 1).ToString(), 'Process')
 Push-Location -LiteralPath $projectRoot
 try {
     if (!(Test-Path -LiteralPath '.git')) { git init --initial-branch=main; if ($LASTEXITCODE -ne 0) { throw 'Git initialization failed.' } }
@@ -64,3 +78,8 @@ try {
     & $ghPath repo view $repository --json url --jq .url
     if ($LASTEXITCODE -ne 0) { throw 'Repository URL verification failed.' }
 } finally { Pop-Location }
+} finally {
+    [Environment]::SetEnvironmentVariable('GIT_CONFIG_COUNT', $originalGitCount, 'Process')
+    [Environment]::SetEnvironmentVariable($gitKeyName, $originalGitKey, 'Process')
+    [Environment]::SetEnvironmentVariable($gitValueName, $originalGitValue, 'Process')
+}
