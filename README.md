@@ -9,7 +9,7 @@ Windows 任务栏与托盘客户端，参考 [raycalrui/CodexMeter](https://gith
 
 截图使用独立演示数据；任务栏实际停靠需要在正常 Windows 桌面验收。
 
-计划发布到公开仓库 `bsxucome/CodexMeter-Windows`。本次已准备本地 Git、源码归档和浏览器授权发布脚本；当前环境网络与 GitHub 授权不可用，**仓库尚未创建或推送**。操作见 [GitHub 发布说明](windows/RELEASES.md)，正常桌面待验收项目见 [ACCEPTANCE.md](windows/ACCEPTANCE.md)。
+公开仓库：[bsxucome/CodexMeter-Windows](https://github.com/bsxucome/CodexMeter-Windows)。本地源码归档、浏览器授权发布脚本与 CI 已提供；具体推送及托管构建验收状态见 [VERIFICATION.md](windows/VERIFICATION.md)。操作见 [GitHub 发布说明](windows/RELEASES.md)，正常桌面待验收项目见 [ACCEPTANCE.md](windows/ACCEPTANCE.md)。
 
 发布脚本已处理沙箱账号创建仓库后，普通用户运行时的 Git 所有权检查；只为本次执行信任该项目路径。Windows PowerShell 5 的未登录提示、仓库不存在和推送进度也按退出码处理，完整流程已有隔离测试。
 

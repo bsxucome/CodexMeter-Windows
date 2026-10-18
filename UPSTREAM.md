@@ -18,6 +18,7 @@
 - A new 2026-10-18 git ls-remote attempt still fails to connect. Full checkout, hosted CI and production signing remain pending. The locally initialized Git repository contains this independent Windows source only. Public target `bsxucome/CodexMeter-Windows` is user-authorized, but has not been created or pushed from this environment.
 - 2026-10-19: the GitHub publication script adds an exact-project, process-scoped Git safe.directory exception for the intentional sandbox-to-user handoff. Inherited Git settings are restored even on failure; no global trust entry or wildcard is written. This changes publication tooling only, not upstream application behavior.
 - The publication script also handles Windows PowerShell 5 native stderr through explicit process streams, preserving expected logged-out/missing-repository branches and interactive prompts. A compiled CLI fixture and actual local bare-repository push validate the workflow without claiming real GitHub authentication or publication.
+- User completed GitHub authentication, public repository creation and a direct normal-session main push on 2026-10-19; local origin/main records b68c6d8. The initial script push failed for an unconfirmed reason. Publisher diagnostics now expose the Git exit reason while masking common credential forms; an isolated rejecting Git hook covers that path. This environment cannot access hosted build results.
 
 ## Checkout limitation
 

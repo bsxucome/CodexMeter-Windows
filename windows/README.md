@@ -27,7 +27,7 @@
 - 更新辅助进程、真实 WPF 新版启动、启动失败重启旧版，以及篡改包拒绝，均有独立进程夹具验证；不触碰正式安装和用户数据。
 - 新增 GitHub 浏览器授权建仓脚本、干净源码 ZIP、官方 SDK／GitHub CLI 校验下载脚本、上游提交采集脚本。双运行时 CI 在版本标签上发布经过哈希检查的 Release，可用自有密钥附加签名更新源。
 
-三轮计划的代码和发行工具已一起推进；真实 Explorer／多屏／系统投递、正常用户 DPAPI、完整上游固定提交复核和托管 .NET 10 构建仍待对应环境验证，见 [ACCEPTANCE.md](ACCEPTANCE.md)。目标公开仓库为 `bsxucome/CodexMeter-Windows`，当前尚未推送，更新源与可信公钥仍为空。
+三轮计划的代码和发行工具已一起推进；真实 Explorer／多屏／系统投递、正常用户 DPAPI、完整上游固定提交复核和托管 .NET 10 构建仍待对应环境验证，见 [ACCEPTANCE.md](ACCEPTANCE.md)。公开仓库 `bsxucome/CodexMeter-Windows` 已完成首次 main 推送，托管构建结果尚未确认；更新源与可信公钥仍为空。
 
 ## v0.6.0 新增
 

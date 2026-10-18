@@ -21,7 +21,7 @@ function Invoke-PublishNative([string]$FilePath, [string[]]$Arguments, [switch]$
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $Capture -or $Quiet
     $start.RedirectStandardOutput = $Capture -or $Quiet
-    $start.RedirectStandardError = $Quiet
+    $start.RedirectStandardError = $Capture -or $Quiet
     $process = New-Object Diagnostics.Process
     $process.StartInfo = $start
     try {
@@ -30,8 +30,14 @@ function Invoke-PublishNative([string]$FilePath, [string[]]$Arguments, [switch]$
         if ($start.RedirectStandardError) { $errors = $process.StandardError.ReadToEndAsync() }
         $process.WaitForExit()
         if ($start.RedirectStandardOutput) { $text = $output.GetAwaiter().GetResult() }
-        if ($start.RedirectStandardError) { $null = $errors.GetAwaiter().GetResult() }
+        $errorText = if ($start.RedirectStandardError) { $errors.GetAwaiter().GetResult() } else { '' }
+        # Preserve useful Git errors without letting PS5 turn stderr into a
+        # terminating PowerShell error or expose common credential forms.
+        $errorText = [regex]::Replace($errorText, '(?i)(https?://)[^/\s@]+@', '$1[redacted]@')
+        $errorText = [regex]::Replace($errorText, 'github_pat_[A-Za-z0-9_]+|gh[pousr]_[A-Za-z0-9]{20,}', '[redacted]')
+        $script:publishNativeError = if ($Quiet) { '' } else { $errorText.TrimEnd() }
         $script:LASTEXITCODE = $process.ExitCode
+        if (!$Quiet -and $errorText.Length) { Write-Host $errorText.TrimEnd() }
         if ($Capture -and !$Quiet -and $text.Length) { Write-Output $text }
     } finally { $process.Dispose() }
 }
@@ -107,8 +113,9 @@ try {
     }
     Invoke-PublishNative -FilePath $ghPath -Arguments @('auth','setup-git','--hostname','github.com')
     if ($LASTEXITCODE -ne 0) { throw 'GitHub Git authentication setup failed.' }
+    Write-Output "Pushing main to $remote"
     Invoke-PublishGit push --set-upstream origin main
-    if ($LASTEXITCODE -ne 0) { throw 'Push failed. The prepared local commit and remote are retained for retry.' }
+    if ($LASTEXITCODE -ne 0) { throw ("Push failed (Git exit code $LASTEXITCODE). $publishNativeError`nThe local commit and remote are retained for retry.") }
     Invoke-PublishNative -FilePath $ghPath -Arguments @('repo','view',$repository,'--json','url','--jq','.url')
     if ($LASTEXITCODE -ne 0) { throw 'Repository URL verification failed.' }
 } finally { Pop-Location }

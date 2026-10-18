@@ -55,7 +55,7 @@ public static class GitHubFixture {
     [Environment]::SetEnvironmentVariable('GIT_CONFIG_PARAMETERS', $null, 'Process')
     [Environment]::SetEnvironmentVariable('GIT_TEST_ASSUME_DIFFERENT_OWNER', $null, 'Process')
     [Environment]::SetEnvironmentVariable('CODEXMETER_FIXTURE_GIT', $gitPath, 'Process')
-    foreach ($scenario in @('success','login-failure','existing-repository')) {
+    foreach ($scenario in @('success','login-failure','existing-repository','push-rejected')) {
         $root = Join-Path $fixture $scenario
         foreach ($directory in @('.github','windows/scripts','windows/artifacts')) { [IO.Directory]::CreateDirectory((Join-Path $root $directory)) | Out-Null }
         foreach ($file in @('.gitattributes','AGENTS.md','CONTRIBUTING.md','LICENSE','README.md','UPSTREAM.md','.github/fixture.txt')) { [IO.File]::WriteAllText((Join-Path $root $file), "Publish fixture`n") }
@@ -70,6 +70,9 @@ public static class GitHubFixture {
         $remote = Join-Path $root 'windows/artifacts/remote.git'
         & $gitPath init --bare --initial-branch=main $remote | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Bare fixture initialization failed.' }
+        if ($scenario -eq 'push-rejected') {
+            [IO.File]::WriteAllText((Join-Path $remote 'hooks/pre-receive'), "#!/bin/sh`necho 'Fixture push rejected before refs update.' >&2`nexit 1`n", (New-Object Text.UTF8Encoding($false)))
+        }
         $failure = $null
         try { & (Join-Path $root 'windows/scripts/publish-github.ps1') -Owner fixture-user -RepositoryName Fixture -Visibility public | Out-Null }
         catch { $failure = $_.Exception.Message }
@@ -81,6 +84,9 @@ public static class GitHubFixture {
             $pushed = & $gitPath --git-dir=$remote rev-parse refs/heads/main
             if ($LASTEXITCODE -ne 0 -or $head -ne $pushed -or $calls -notcontains 'repo create' -or $calls -notcontains 'auth setup-git') { throw 'Fixture did not complete actual local Git push.' }
             Write-Output 'PASS logged-out stderr reaches authorization; missing repository reaches creation; stderr progress permits actual local Git commit/push'
+        } elseif ($scenario -eq 'push-rejected') {
+            if ($failure -notlike '*Push failed (Git exit code 1)*' -or $failure -notlike '*Fixture push rejected before refs update*') { throw 'Actual push rejection reason was not preserved.' }
+            Write-Output 'PASS rejected push reports the actual Git exit code and remote hook error without changing remote refs'
         } else {
             $expected = if ($scenario -eq 'login-failure') { 'GitHub browser authorization did not complete.' } else { 'That repository already exists; choose a new repository name. Nothing was pushed.' }
             if ($failure -ne $expected -or $calls -contains 'repo create' -or (Test-Path -LiteralPath (Join-Path $root 'windows/artifacts/created'))) { throw 'Failure guard did not stop publication.' }

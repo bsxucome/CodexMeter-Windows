@@ -15,7 +15,7 @@ DotNet 需要 .NET 10 SDK，生成 win-x64 自包含文件夹与 ZIP；Framework
 
 ## 发布到 GitHub
 
-已确定公开仓库目标：`bsxucome/CodexMeter-Windows`。当前执行环境无法连接 GitHub，也没有可用 GitHub 授权；Chrome 登录不会自动授予 CLI 权限。源码已在本地准备，**尚未创建仓库、推送或发布 Release**。
+公开仓库：`bsxucome/CodexMeter-Windows`。2026-10-19 用户在正常 PowerShell 完成 GitHub CLI 授权并创建仓库，随后用直接 Git 命令成功推送 main。首次脚本推送失败的具体原因尚未确认；当前 Codex 执行环境仍无法连接 GitHub，不能独立检查托管构建。脚本会复用匹配的 origin 与已有仓库继续推送，不需要重复建仓。
 
 在正常网络的 Windows PowerShell 中，从项目根目录运行：
 
@@ -28,6 +28,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/publish-gith
 仓库可能由 Codex 沙箱账号创建，普通用户运行 Git 时会遇到 `detected dubious ownership`。发布脚本通过 Git 的进程配置，仅把自身项目的绝对路径加入本次执行的 `safe.directory`，并传给 GitHub CLI 的 Git 子进程；正常结束或报错后恢复原环境。不修改全局信任列表，也不需要管理员权限。该处理不赋予额外文件写入权限。`publish-ownership-smoke.ps1` 在隔离夹具中验证同类拒绝、源码打包、既有配置保留与异常退出恢复。
 
 Windows PowerShell 5 会把重定向的原生命令 stderr 转成错误记录。发布脚本使用独立进程流并检查退出码，允许“尚未登录／仓库不存在”进入对应分支，也保留授权交互和 Git 推送进度；真正失败仍会停止。`publish-flow-smoke.ps1` 使用模拟 GitHub CLI 和本地裸仓库，验证完整提交／推送、登录失败及已有仓库保护，不访问真实 GitHub。
+
+捕获的 Git stderr 会作为普通诊断显示，推送失败同时报告 Git 退出码和具体原因，常见 Token 及 URL 中的认证信息会遮蔽。隔离远程仓库的拒绝钩子验证了失败原因可见；不使用强推或删除远程仓库重试。
+
+已完成授权和 origin 配置后，也可在正常 PowerShell 中直接同步本地提交：
+
+```powershell
+git -c safe.directory="D:/Codex Project/CodexMeter" -C "D:\Codex Project\CodexMeter" push --set-upstream origin main
+```
 
 首次 main 构建通过并检查 artifacts 后，再创建发行标签：
 
