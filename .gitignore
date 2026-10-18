@@ -1,0 +1,13 @@
+.tools/
+**/bin/
+**/obj/
+windows/artifacts/
+*.user
+*.suo
+*.pfx
+*.p12
+*private*.xml
+*.codexbackup
+*.codexmeterbackup
+history.sqlite3*
+remote-secrets.bin

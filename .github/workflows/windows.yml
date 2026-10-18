@@ -1,0 +1,96 @@
+name: Windows builds
+on:
+  push:
+    tags: ['windows-v*']
+    branches: ['main']
+    paths: ['windows/**', '.github/workflows/windows.yml', 'UPSTREAM.md', 'LICENSE', 'README.md']
+  pull_request:
+    paths: ['windows/**', '.github/workflows/windows.yml', 'UPSTREAM.md', 'LICENSE']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [Framework, DotNet]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        if: matrix.runtime == 'DotNet'
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build, test and package
+        shell: powershell
+        env:
+          BUILD_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          ./windows/scripts/validate-source.ps1
+          ./windows/scripts/build.ps1 -Runtime $env:BUILD_RUNTIME -Publish
+      - name: Preview UI checks (Framework only, sequential)
+        if: matrix.runtime == 'Framework'
+        shell: powershell
+        run: |
+          ./windows/scripts/publishing-smoke.ps1
+          ./windows/scripts/update-process-smoke.ps1
+          ./windows/scripts/ui-smoke.ps1
+          ./windows/scripts/indicator-smoke.ps1
+          ./windows/scripts/features-smoke.ps1
+          ./windows/scripts/advanced-smoke.ps1
+          ./windows/scripts/release-smoke.ps1
+      - name: Sign Windows update manifests when a release key is configured
+        if: startsWith(github.ref, 'refs/tags/windows-v')
+        shell: powershell
+        env:
+          CODEXMETER_RELEASE_KEY_XML: ${{ secrets.WINDOWS_UPDATE_PRIVATE_KEY_XML }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          BUILD_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          $version = $env:RELEASE_TAG.Substring(9)
+          $source = [IO.File]::ReadAllText('windows/CodexMeter.Core/ProductVersion.cs')
+          if ([regex]::Match($source, 'Current = "([^"]+)"').Groups[1].Value -ne $version) { throw 'Release tag does not match product version.' }
+          if (!$env:CODEXMETER_RELEASE_KEY_XML) { Write-Output 'No update signing key configured; publish portable packages only.'; exit 0 }
+          $runtime = if ($env:BUILD_RUNTIME -eq 'Framework') { 'framework-x64' } else { 'dotnet10-x64' }
+          $channel = if ($version.Contains('-')) { 'beta' } else { 'stable' }
+          $name = "CodexMeter-Windows-$version-$runtime.zip"
+          ./windows/scripts/sign-release.ps1 -Archive "windows/artifacts/$name" -Version $version -Channel $channel -Runtime $runtime -PackageUrl "https://github.com/$env:REPOSITORY/releases/download/$env:RELEASE_TAG/$name" -OutputDirectory windows/artifacts/feed
+          Copy-Item -LiteralPath "windows/artifacts/feed/$channel-$runtime.json" -Destination windows/artifacts
+          Copy-Item -LiteralPath windows/artifacts/feed/public-key.json -Destination "windows/artifacts/public-key-$runtime.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CodexMeter-Windows-${{ matrix.runtime }}
+          path: |
+            windows/artifacts/*.zip
+            windows/artifacts/*.sha256
+            windows/artifacts/*.json
+          if-no-files-found: error
+          retention-days: 14
+  release:
+    if: startsWith(github.ref, 'refs/tags/windows-v')
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: CodexMeter-Windows-*
+          merge-multiple: true
+          path: release-assets
+      - name: Publish verified Windows packages and optional signed feed
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./windows/scripts/publish-release.ps1 -Repository $env:REPOSITORY -Tag $env:RELEASE_TAG -Directory release-assets

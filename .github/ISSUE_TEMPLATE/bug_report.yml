@@ -1,0 +1,28 @@
+name: Windows problem
+description: Report a reproducible problem in the Windows adaptation
+body:
+  - type: input
+    id: version
+    attributes:
+      label: CodexMeter version and package runtime
+      placeholder: 0.7.0, framework-x64 or dotnet10-x64
+    validations:
+      required: true
+  - type: textarea
+    id: desktop
+    attributes:
+      label: Windows and taskbar setup
+      description: Windows version, monitor count, scaling, taskbar alignment and auto-hide setting.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected behavior and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Optional screenshots or diagnostic summary
+      description: Remove account details, bot tokens, webhook URLs and private history. Do not attach authentication files or secret configuration.

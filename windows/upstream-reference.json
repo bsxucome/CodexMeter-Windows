@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/raycalrui/CodexMeter.git",
+  "reference": "main",
+  "commit": null,
+  "status": "fetch-blocked",
+  "observedCachedCommit": "79a265c54903ca8416274ecea30c5f1be2ece899",
+  "observedCachedCommitUrl": "https://github.com/raycalrui/CodexMeter/commit/79a265c54903ca8416274ecea30c5f1be2ece899",
+  "note": "Cached commit page identifies a historical commit; branch snapshots disagree and are not verified against it. Run sync-upstream.ps1 on a network-enabled machine before claiming a pinned review.",
+  "files": []
+}
