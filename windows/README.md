@@ -111,6 +111,8 @@
 
 默认构建不依赖第三方 NuGet 包。测试是独立控制台测试程序，失败返回非零退出码。
 
+SDK 的 Core、Tests 与 WPF 项目均以 Windows 为目标；保留平台分析器和警告即错误检查。Framework 管道启动会避免 UTF-8 控制台引入 BOM，并恢复父进程的原编码，JSON 帧始终按无 BOM UTF-8 传输。自动测试包含实际子进程的中文／Emoji 逐字节响应。
+
 ```powershell
 # 从项目根目录运行；只对当前构建进程设置脚本策略
 powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/build.ps1

@@ -10,6 +10,12 @@ User-reported progress, 2026-10-19: GitHub CLI authentication as bsxucome and cr
 
 ## Final release checks
 
+CI correction follow-up, 2026-10-19: logs collected from [run 39147240924](https://github.com/bsxucome/CodexMeter-Windows/actions/runs/39147240924) at b68c6d8 confirm two independent failures. The DotNet job reports 11 CA1416 errors in RegistryStartupValueStore; Core and Tests now target net10.0-windows, and the manually maintained WPF AssemblyInfo has its platform annotation and version metadata in both builds. Warnings-as-errors and the analyzer remain enabled. This environment still has no .NET 10 SDK; the corrected SDK build must be verified by the next hosted run.
+
+Framework's first real transport test fails under a UTF-8 console. The unmodified binary reproduces the same disconnect locally with CP65001 and a three-byte encoding preamble. Framework's Process.Start creates and auto-flushes a StandardInput writer using Console.InputEncoding. RPC startup now uses a BOM-free encoding while preserving the console code page and restoring the exact previous encoding afterward; modern .NET sets StandardInputEncoding directly. A new real-child regression checks restored encoding and a first JSON request with fragmented Chinese/Emoji echo. The mock emits bytes rather than individual surrogate chars. The corrected Framework build passes **334 scenarios** both in the original console configuration and in a UTF-8 console. Existing running v0.7.0 is retained; the old portable ZIP is not replaced by this source-only CI correction.
+
+The read-only collector was validated with fixture CLI output for failure, a newer success and no matching run. Sync-CI-Fix.cmd pushes existing committed main only to the exact authorized origin, then waits for that exact SHA; mocked Git/CLI tests cover asynchronous completion, ignoring a different older failed run, refusal of unrelated origins and stopping after push failure. These fixtures never contact GitHub. Latest results are written under ignored windows/artifacts/ci-logs/latest-result.txt. Selecting the first executable match also avoids treating multiple PATH candidates as one executable name. Public-network verification still requires the normal user session.
+
 | Check | Result |
 | --- | --- |
 | Framework compile and core tests | PASS, warnings as errors, 332 scenarios; DPAPI success excluded |

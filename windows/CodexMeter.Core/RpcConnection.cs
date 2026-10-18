@@ -56,6 +56,30 @@ namespace CodexMeter.Core
             }
         }
         private readonly byte[] diagnosticTail = new byte[8192];
+#if NETFRAMEWORK
+        private static readonly object startEncodingSync = new object();
+#endif
+
+        private static void StartProcess(Process child)
+        {
+#if NETFRAMEWORK
+            // Framework creates StandardInput with Console.InputEncoding and
+            // immediately flushes its preamble. Under CP65001 that puts a BOM
+            // before our first JSON line, even though we write to BaseStream.
+            // Keep the console code page unchanged; restore its exact encoding
+            // after constructing the pipe's writer with BOM-free UTF-8.
+            lock (startEncodingSync)
+            {
+                var previous = Console.InputEncoding;
+                if (previous.CodePage != 65001 || previous.GetPreamble().Length == 0) { child.Start(); return; }
+                try { Console.InputEncoding = new UTF8Encoding(false); child.Start(); }
+                finally { Console.InputEncoding = previous; }
+            }
+#else
+            child.StartInfo.StandardInputEncoding = new UTF8Encoding(false);
+            child.Start();
+#endif
+        }
 
         public RpcConnection(LaunchCommand command)
         {
@@ -70,7 +94,7 @@ namespace CodexMeter.Core
             process = new Process { StartInfo = start };
             try
             {
-                process.Start();
+                StartProcess(process);
                 job = new ChildJob(process);
                 Completion = Task.WhenAll(ReadOutputAsync(), DrainErrorsAsync());
             }

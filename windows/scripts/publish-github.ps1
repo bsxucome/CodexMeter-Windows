@@ -5,7 +5,7 @@ param(
     [switch]$PrepareOnly
 )
 $ErrorActionPreference = 'Stop'
-$gitExecutable = (Get-Command git -CommandType Application -ErrorAction Stop).Source
+$gitExecutable = (Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
 # In Windows PowerShell 5, redirected native stderr becomes NativeCommandError.
 # Use native process streams so prompts/progress and expected nonzero probes do
 # not terminate the script before their exit codes can be checked.
@@ -64,6 +64,7 @@ Push-Location -LiteralPath $projectRoot
 try {
     if (!(Test-Path -LiteralPath '.git')) { Invoke-PublishGit init --initial-branch=main; if ($LASTEXITCODE -ne 0) { throw 'Git initialization failed.' } }
     $selection = @('.gitattributes','.gitignore','.github','AGENTS.md','CONTRIBUTING.md','LICENSE','README.md','UPSTREAM.md','windows')
+    foreach ($launcher in @('Collect-CI-Logs.cmd','Sync-CI-Fix.cmd')) { if (Test-Path -LiteralPath $launcher) { $selection += $launcher } }
     if (Test-Path -LiteralPath 'docs') { $selection += 'docs' }
     Invoke-PublishGit add -- @selection
     if ($LASTEXITCODE -ne 0) { throw 'Source staging failed.' }

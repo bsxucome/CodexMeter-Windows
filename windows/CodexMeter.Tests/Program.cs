@@ -23,6 +23,7 @@ namespace CodexMeter.Tests
                 if (args.Length == 2 && args[0] == "--probe") { Probe(args[1]).GetAwaiter().GetResult(); return 0; }
                 if (args.Length == 2 && args[0] == "--release-script-fixture") { ReleaseScriptFixture(args[1]); return 0; }
                 if (args.Length == 2 && args[0] == "--interrupt-restore") { InterruptRestore(args[1]); return 0; }
+                if (args.Length == 1 && args[0] == "--transport-tests") { Transport().GetAwaiter().GetResult(); Console.WriteLine("PASS: " + passed + " transport scenarios"); return 0; }
                 if (args.Length == 6 && args[0] == "--verify-release")
                 { SignedRelease.Verify(File.ReadAllText(args[1]), File.ReadAllText(args[2]), args[4], args[5]).VerifyArchive(args[3]); Console.WriteLine("PASS external signed release fixture"); return 0; }
                 Run().GetAwaiter().GetResult();
@@ -202,6 +203,20 @@ namespace CodexMeter.Tests
         }
         private static async Task Transport()
         {
+            var previousEncoding = Console.InputEncoding;
+            try
+            {
+                Console.InputEncoding = new UTF8Encoding(true);
+                using (var connection = new RpcConnection(Mock("fragment")))
+                using (var cancellation = new CancellationTokenSource(5000))
+                {
+                    Check(Console.InputEncoding.CodePage == 65001 && Console.InputEncoding.GetPreamble().Length == 3,
+                        "RPC launch restores the parent's exact UTF-8 console encoding");
+                    var result = await connection.RequestAsync("echo", new { value = "中文额度 🚀" }, cancellation.Token);
+                    Check(Json.Text(result, "value") == "中文额度 🚀", "BOM-free first JSON request and fragmented Unicode response work under a UTF-8 console");
+                }
+            }
+            finally { Console.InputEncoding = previousEncoding; }
             using (var connection = new RpcConnection(Mock("fragment")))
             using (var cancellation = new CancellationTokenSource(5000))
             {

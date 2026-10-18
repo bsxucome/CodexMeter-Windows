@@ -37,6 +37,10 @@ Windows PowerShell 5 会把重定向的原生命令 stderr 转成错误记录。
 git -c safe.directory="D:/Codex Project/CodexMeter" -C "D:\Codex Project\CodexMeter" push --set-upstream origin main
 ```
 
+维护此仓库时，也可从项目根目录双击 `Sync-CI-Fix.cmd`。它校验 main 和精确的 GitHub 推送地址，只推送现有提交，再等待该 SHA 的 `windows.yml` 工作流完成。结果写入 `windows/artifacts/ci-logs/latest-result.txt`；失败时附带失败步骤日志。不会暂存、提交、强推或重新创建仓库。等待最多 35 分钟，仍在排队／运行时会如实记录状态。
+
+单独采集最新一次工作流可双击 `Collect-CI-Logs.cmd`；它不推送、不写 GitHub。最新成功不会被更早的失败覆盖。两种入口复用正常用户会话已登录的 GitHub CLI，当前隔离 Codex 桌面不读取 Edge 登录信息。日志留在被 Git 忽略的 artifacts 内。
+
 首次 main 构建通过并检查 artifacts 后，再创建发行标签：
 
 ```powershell

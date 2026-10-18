@@ -13,4 +13,6 @@ Windows 任务栏与托盘客户端，参考 [raycalrui/CodexMeter](https://gith
 
 发布脚本已处理沙箱账号创建仓库后，普通用户运行时的 Git 所有权检查；只为本次执行信任该项目路径。Windows PowerShell 5 的未登录提示、仓库不存在和推送进度也按退出码处理，完整流程已有隔离测试。
 
+构建排查可双击 `Collect-CI-Logs.cmd`。维护者在此工作目录提交修正后，可双击 `Sync-CI-Fix.cmd`：同步已提交的 main，等待对应提交的 Windows 构建结束，并把结果保存到 `windows/artifacts/ci-logs/latest-result.txt`。同步入口仅用于此仓库，校验 origin，保留现有登录且不强推。
+
 此工作目录包含新增的 Windows 客户端，**不是完整上游克隆**。当前环境无法通过 Git 下载仓库；macOS 文件未复制或修改。来源及同步限制见 [UPSTREAM.md](UPSTREAM.md)。

@@ -26,7 +26,8 @@ namespace CodexMeter.Tests
                 var id = Json.Get(request, "id");
                 if (id == null) continue;
                 string method = Json.Text(request, "method");
-                object result = method == "account/read" ? Json.Parse("{\"account\":{\"type\":\"chatgpt\",\"planType\":\"plus\"}}") :
+                object result = method == "echo" ? Json.Object(request, "params") :
+                    method == "account/read" ? Json.Parse("{\"account\":{\"type\":\"chatgpt\",\"planType\":\"plus\"}}") :
                     method == "account/rateLimits/read" ? Json.Parse(Limits) : new Dictionary<string, object> { { "method", method } };
                 if (mode == "tree")
                 {
@@ -44,7 +45,9 @@ namespace CodexMeter.Tests
                 if (mode == "reorder" && first == null) { first = response; continue; }
                 if (mode == "fragment")
                 {
-                    foreach (char character in response) { Console.Write(character); Console.Out.Flush(); }
+                    var bytes = Encoding.UTF8.GetBytes(response);
+                    var output = Console.OpenStandardOutput();
+                    foreach (byte value in bytes) { output.WriteByte(value); output.Flush(); }
                     Console.WriteLine();
                 }
                 else Console.WriteLine(response);
