@@ -4,6 +4,8 @@ Verified on 2026-10-18, Windows 11 x64.
 
 Publication tooling follow-up, 2026-10-19: publish-ownership-smoke.ps1 uses Git's foreign-owner test mode with an isolated global config and a fixture path containing spaces. It reproduces dubious ownership, then verifies successful source preparation with zero and one pre-existing runtime config entries, exact environment restoration, unchanged global config and restored ownership rejection after the script exits. An intentional user-data staging failure also restores configuration. This does not claim GitHub login or remote push success. Application code and portable binaries are unchanged.
 
+A subsequent PowerShell 5 fix launches Git/GitHub CLI with explicit native streams instead of treating expected stderr as a terminating NativeCommandError. publish-flow-smoke.ps1 runs under ErrorActionPreference=Stop with a compiled fixture CLI: logged-out stderr proceeds to interactive authorization, missing-repository stderr proceeds to public creation, and ordinary progress permits a real commit and push into an isolated local bare repository. It also checks nonzero login failure and existing-repository refusal before creation/push. Space-containing arguments are exercised; no credentials, browser session or remote network are used. The ownership regression suite and PowerShell syntax checks also pass after this change.
+
 ## Final release checks
 
 | Check | Result |

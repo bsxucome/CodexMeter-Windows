@@ -27,6 +27,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/publish-gith
 
 仓库可能由 Codex 沙箱账号创建，普通用户运行 Git 时会遇到 `detected dubious ownership`。发布脚本通过 Git 的进程配置，仅把自身项目的绝对路径加入本次执行的 `safe.directory`，并传给 GitHub CLI 的 Git 子进程；正常结束或报错后恢复原环境。不修改全局信任列表，也不需要管理员权限。该处理不赋予额外文件写入权限。`publish-ownership-smoke.ps1` 在隔离夹具中验证同类拒绝、源码打包、既有配置保留与异常退出恢复。
 
+Windows PowerShell 5 会把重定向的原生命令 stderr 转成错误记录。发布脚本使用独立进程流并检查退出码，允许“尚未登录／仓库不存在”进入对应分支，也保留授权交互和 Git 推送进度；真正失败仍会停止。`publish-flow-smoke.ps1` 使用模拟 GitHub CLI 和本地裸仓库，验证完整提交／推送、登录失败及已有仓库保护，不访问真实 GitHub。
+
 首次 main 构建通过并检查 artifacts 后，再创建发行标签：
 
 ```powershell

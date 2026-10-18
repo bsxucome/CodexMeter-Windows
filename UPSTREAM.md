@@ -17,6 +17,7 @@
 - The historical cached commit page identifies `79a265c54903ca8416274ecea30c5f1be2ece899`, but the current README and cached source dates disagree. This is an observed historical candidate, **not verified HEAD or the baseline of a complete review**. `windows/upstream-reference.json` leaves `commit` null. `windows/scripts/sync-upstream.ps1` records the actual fetched SHA and selected file hashes only after a successful checkout; manual review must then reconcile behavior.
 - A new 2026-10-18 git ls-remote attempt still fails to connect. Full checkout, hosted CI and production signing remain pending. The locally initialized Git repository contains this independent Windows source only. Public target `bsxucome/CodexMeter-Windows` is user-authorized, but has not been created or pushed from this environment.
 - 2026-10-19: the GitHub publication script adds an exact-project, process-scoped Git safe.directory exception for the intentional sandbox-to-user handoff. Inherited Git settings are restored even on failure; no global trust entry or wildcard is written. This changes publication tooling only, not upstream application behavior.
+- The publication script also handles Windows PowerShell 5 native stderr through explicit process streams, preserving expected logged-out/missing-repository branches and interactive prompts. A compiled CLI fixture and actual local bare-repository push validate the workflow without claiming real GitHub authentication or publication.
 
 ## Checkout limitation
 
