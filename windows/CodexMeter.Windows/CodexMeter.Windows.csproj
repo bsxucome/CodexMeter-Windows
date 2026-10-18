@@ -4,6 +4,10 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <!-- WPF owns the UI and declares PerMonitorV2 in app.manifest before any HWND.
+         WinForms is used for NotifyIcon/dialog interop, not its application bootstrap.
+         Retain that manifest for both runtimes; exempt only the WinForms DPI rule. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <AssemblyName>CodexMeter</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>0.7.0</Version>

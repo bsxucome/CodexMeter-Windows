@@ -15,4 +15,6 @@ Windows 任务栏与托盘客户端，参考 [raycalrui/CodexMeter](https://gith
 
 构建排查可双击 `Collect-CI-Logs.cmd`。维护者在此工作目录提交修正后，可双击 `Sync-CI-Fix.cmd`：同步已提交的 main，等待对应提交的 Windows 构建结束，并把结果保存到 `windows/artifacts/ci-logs/latest-result.txt`。同步入口仅用于此仓库，校验 origin，保留现有登录且不强推。
 
+最近一轮 Actions 已通过先前失败的平台目标和 UTF-8 通信步骤；随后发现的 WPF 高 DPI 检查冲突及发布测试换行规则已作修正，完整托管构建仍待再次验证。详细证据见 [验证记录](windows/VERIFICATION.md)。
+
 此工作目录包含新增的 Windows 客户端，**不是完整上游克隆**。当前环境无法通过 Git 下载仓库；macOS 文件未复制或修改。来源及同步限制见 [UPSTREAM.md](UPSTREAM.md)。

@@ -15,9 +15,12 @@ function Assert-OwnershipRejected([string]$directory) {
 }
 try {
     foreach ($directory in @('.github','windows/scripts','windows/artifacts')) { [IO.Directory]::CreateDirectory((Join-Path $fixture $directory)) | Out-Null }
-    foreach ($file in @('.gitattributes','AGENTS.md','CONTRIBUTING.md','LICENSE','README.md','UPSTREAM.md','.github/fixture.txt')) { [IO.File]::WriteAllText((Join-Path $fixture $file), "Ownership fixture`n") }
+    foreach ($file in @('AGENTS.md','CONTRIBUTING.md','LICENSE','README.md','UPSTREAM.md','.github/fixture.txt')) { [IO.File]::WriteAllText((Join-Path $fixture $file), "Ownership fixture`n") }
+    [IO.File]::WriteAllText((Join-Path $fixture '.gitattributes'), "* text=auto`n*.ps1 text eol=crlf`n")
     [IO.File]::WriteAllText((Join-Path $fixture '.gitignore'), "windows/artifacts/`n")
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'publish-github.ps1') -Destination (Join-Path $fixture 'windows/scripts/publish-github.ps1')
+    # Always exercise Windows checkout line endings, even from an LF source tree.
+    $publisher = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'publish-github.ps1')) -replace '\r?\n', "`r`n"
+    [IO.File]::WriteAllText((Join-Path $fixture 'windows/scripts/publish-github.ps1'), $publisher, (New-Object Text.UTF8Encoding($false)))
     $globalFile = Join-Path $fixture 'windows/artifacts/isolated-global.gitconfig'
     [IO.File]::WriteAllText($globalFile, "[user]`n name = Ownership Fixture`n")
     [Environment]::SetEnvironmentVariable('GIT_CONFIG_GLOBAL', $globalFile, 'Process')
