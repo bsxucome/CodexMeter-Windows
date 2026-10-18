@@ -9,12 +9,21 @@ namespace CodexMeter.Windows
     internal static class Program
     {
         private const string InstanceName = "Local\\CodexMeter.Windows.Basic.v1";
+        private static string showMessageName = "CodexMeter.Windows.Show";
+        internal static string ShowMessageName { get { return showMessageName; } }
         [STAThread]
         private static int Main(string[] args)
         {
             string fixtureToken = null;
+            string instanceFixture = null;
             try
             {
+                if (args.Length == 2 && args[0] == "--instance-fixture")
+                {
+                    instanceFixture = ValidateInstanceFixture(args[1]);
+                    showMessageName += "." + instanceFixture;
+                    args = new[] { "--preview", "--interaction-check" };
+                }
                 if (args.Length == 3 && args[0] == "--install-fixture") { UpdateFixture.Initialize(args[1]); return UpdateFixture.Install(args[2]); }
                 if (args.Length == 3 && args[0] == "--apply-update-fixture") { UpdateFixture.Initialize(args[2]); return UpdateWorker.Apply(args[1]); }
                 if (args.Length == 2 && args[0] == "--rollback-fixture") { UpdateFixture.Initialize(args[1]); return UpdateFixture.Rollback(); }
@@ -29,12 +38,13 @@ namespace CodexMeter.Windows
             if (args.Length == 2 && args[0] == "--apply-update") return UpdateWorker.Apply(args[1]);
             var preview = args.Contains("--preview") || args.Contains("--smoke");
             bool created;
-            string instance = UpdateFixture.Enabled ? InstanceName + ".Integration." + System.IO.Path.GetFileName(UpdateFixture.DirectoryPath) : preview ? InstanceName + ".Preview" : InstanceName;
+            string instance = instanceFixture != null ? InstanceName + ".Fixture." + instanceFixture :
+                UpdateFixture.Enabled ? InstanceName + ".Integration." + System.IO.Path.GetFileName(UpdateFixture.DirectoryPath) : preview ? InstanceName + ".Preview" : InstanceName;
             using (var singleton = new Mutex(true, instance, out created))
             {
                 if (!created)
                 {
-                    if (!preview) PostMessage(new IntPtr(0xffff), RegisterWindowMessage("CodexMeter.Windows.Show"), IntPtr.Zero, IntPtr.Zero);
+                    if (!preview || instanceFixture != null) PostMessage(new IntPtr(0xffff), RegisterWindowMessage(ShowMessageName), IntPtr.Zero, IntPtr.Zero);
                     return 0;
                 }
                 try
@@ -59,6 +69,15 @@ namespace CodexMeter.Windows
                 }
                 finally { singleton.ReleaseMutex(); }
             }
+        }
+        private static string ValidateInstanceFixture(string directory)
+        {
+            string full = System.IO.Path.GetFullPath(directory), name = System.IO.Path.GetFileName(full);
+            if (!System.Text.RegularExpressions.Regex.IsMatch(name, "^instance-process-[a-f0-9]{32}$") ||
+                (System.IO.File.GetAttributes(full) & System.IO.FileAttributes.ReparsePoint) != 0 ||
+                System.IO.File.ReadAllText(System.IO.Path.Combine(full, ".fixture")) != "CodexMeter.InstanceFixture.v1")
+                throw new System.IO.IOException("Invalid instance fixture.");
+            return name;
         }
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         internal static extern uint RegisterWindowMessage(string message);

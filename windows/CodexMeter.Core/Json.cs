@@ -15,13 +15,25 @@ namespace CodexMeter.Core
         public static Dictionary<string, object> Parse(string value)
         {
 #if NETFRAMEWORK
-            return new JavaScriptSerializer { MaxJsonLength = 1048576, RecursionLimit = 64 }
-                .Deserialize<Dictionary<string, object>>(value);
+            try
+            {
+                return new JavaScriptSerializer { MaxJsonLength = 1048576, RecursionLimit = 64 }
+                    .Deserialize<Dictionary<string, object>>(value);
+            }
+            catch (ArgumentException) { throw InvalidJson(); }
+            catch (InvalidOperationException) { throw InvalidJson(); }
 #else
-            using (var document = JsonDocument.Parse(value, new JsonDocumentOptions { MaxDepth = 64 }))
-                return ConvertElement(document.RootElement) as Dictionary<string, object>;
+            try
+            {
+                using (var document = JsonDocument.Parse(value, new JsonDocumentOptions { MaxDepth = 64 }))
+                    return ConvertElement(document.RootElement) as Dictionary<string, object>;
+            }
+            catch (JsonException) { throw InvalidJson(); }
 #endif
         }
+
+        // Include derived reader exceptions without leaking input or runtime-specific types.
+        private static FormatException InvalidJson() { return new FormatException("Invalid JSON data."); }
 
         public static string Encode(object value)
         {

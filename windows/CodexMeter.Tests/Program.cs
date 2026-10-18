@@ -41,7 +41,7 @@ namespace CodexMeter.Tests
         { if (!condition) throw new Exception(name); passed++; Console.WriteLine("PASS " + name); }
         private static async Task Run()
         {
-            Quotas(); Framing(); SettingsRoundtrip(); Locator(); Quotes(); TaskbarPlacement(); IndicatorClicks();
+            Quotas(); Framing(); JsonFailures(); SettingsRoundtrip(); Locator(); Quotes(); TaskbarPlacement(); IndicatorClicks();
             Tokens(); History(); Analytics(); Appearance(); SystemFeatures();
             BackupFeatures(); UpdateFeatures(); await RemoteFeatures(); await UpdateTransportFeatures(); await RestoreServiceFeatures();
             FinalParityFeatures(); await InterruptedRestoreFeatures();
@@ -91,6 +91,16 @@ namespace CodexMeter.Tests
                 try { buffer.Append(Enumerable.Repeat((byte)'x', LineBuffer.MaximumLineBytes + 1).ToArray(), LineBuffer.MaximumLineBytes + 1); }
                 catch (InvalidDataException) { rejected = true; }
                 Check(rejected, "oversized output bounded at 1 MiB");
+            }
+        }
+        private static void JsonFailures()
+        {
+            foreach (var input in new[] { "{broken PRIVATE_JSON_SENTINEL", new string('[', 70) + "0" + new string(']', 70) })
+            {
+                bool rejected = false;
+                try { Json.Parse(input); }
+                catch (FormatException ex) { rejected = ex.InnerException == null && !ex.ToString().Contains("PRIVATE_JSON_SENTINEL"); }
+                Check(rejected, "JSON syntax/depth errors use a safe runtime-independent exception");
             }
         }
         private static void SettingsRoundtrip()

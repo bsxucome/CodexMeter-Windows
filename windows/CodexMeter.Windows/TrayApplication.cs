@@ -33,7 +33,7 @@ namespace CodexMeter.Windows
         private AppearanceWindow appearancePreview;
         private DispatcherTimer timer;
         private HwndSource messageWindow;
-        private readonly uint showMessage = Program.RegisterWindowMessage("CodexMeter.Windows.Show");
+        private readonly uint showMessage = Program.RegisterWindowMessage(Program.ShowMessageName);
         private readonly uint taskbarCreated = Program.RegisterWindowMessage("TaskbarCreated");
         private Icon icon;
         private string iconKey;
