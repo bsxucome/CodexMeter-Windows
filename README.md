@@ -13,7 +13,7 @@ Windows 任务栏与托盘客户端，参考 [raycalrui/CodexMeter](https://gith
 
 发布脚本已处理沙箱账号创建仓库后，普通用户运行时的 Git 所有权检查；只为本次执行信任该项目路径。Windows PowerShell 5 的未登录提示、仓库不存在和推送进度也按退出码处理，完整流程已有隔离测试。
 
-构建排查可双击 `Collect-CI-Logs.cmd`。维护者在此工作目录提交修正后，可双击 `Sync-CI-Fix.cmd`：同步已提交的 main，等待对应提交的 Windows 构建结束，并把结果保存到 `windows/artifacts/ci-logs/latest-result.txt`。同步入口仅用于此仓库，校验 origin，保留现有登录且不强推。
+构建排查可双击 `Collect-CI-Logs.cmd`。维护者在此工作目录提交修正后，可双击 `Sync-CI-Fix.cmd`：同步已提交的 main，等待对应提交的 Windows 构建结束，并把结果保存到 `windows/artifacts/ci-logs/latest-result.txt`。同步入口仅用于此仓库，校验 origin，保留现有登录且不强推。遇到 Schannel 握手失败时，会临时使用 OpenSSL 和 HTTP/1.1 重试一次，保留证书验证，不修改全局 Git 设置；认证、证书或分支冲突错误会停止。
 
 [Windows 自动构建已通过](https://github.com/bsxucome/CodexMeter-Windows/actions/runs/39182365683)，对应修复提交 `0256625`。Framework 和 .NET 10 构建、测试及构建产物上传均完成，可在该运行页面的 Artifacts 中获取构建包。详细证据见 [验证记录](windows/VERIFICATION.md)。
 

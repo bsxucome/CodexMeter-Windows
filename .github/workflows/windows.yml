@@ -67,6 +67,7 @@ jobs:
           ./windows/scripts/publish-ownership-smoke.ps1
           ./windows/scripts/publish-flow-smoke.ps1
           ./windows/scripts/release-scripts-smoke.ps1
+          ./windows/scripts/sync-ci-smoke.ps1
           ./windows/scripts/actions-release-smoke.ps1
           ./windows/scripts/update-process-smoke.ps1
           ./windows/scripts/ui-smoke.ps1

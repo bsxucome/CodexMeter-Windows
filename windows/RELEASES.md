@@ -41,6 +41,8 @@ git -c safe.directory="D:/Codex Project/CodexMeter" -C "D:\Codex Project\CodexMe
 
 维护此仓库时，也可从项目根目录双击 `Sync-CI-Fix.cmd`。它校验 main 和精确的 GitHub 推送地址，只推送现有提交，再等待该 SHA 的 `windows.yml` 工作流完成。结果写入 `windows/artifacts/ci-logs/latest-result.txt`；失败时附带失败步骤日志。不会暂存、提交、强推或重新创建仓库。等待最多 35 分钟，仍在排队／运行时会如实记录状态。
 
+同步时若出现 `schannel: failed to receive handshake, SSL/TLS connection failed`，脚本会使用命令级的 `http.sslBackend=openssl` 和 `http.version=HTTP/1.1` 重试一次，仍启用证书验证，不修改用户或仓库 Git 配置。两次均推送检查时的同一个提交，避免重试期间本地分支变化造成推送对象改变。认证、证书、分支拒绝和普通连接失败不触发该兼容重试；若仍失败，控制台保留原始 Git 报错，脚本停止，不进入 CI 等待。此项兼容处理不能保证修复代理、防火墙或网络不可达问题。
+
 单独采集最新一次工作流可双击 `Collect-CI-Logs.cmd`；它不推送、不写 GitHub。最新成功不会被更早的失败覆盖。两种入口复用正常用户会话已登录的 GitHub CLI，当前隔离 Codex 桌面不读取 Edge 登录信息。日志留在被 Git 忽略的 artifacts 内。
 
 新版本推荐直接在 GitHub Actions 发版：
