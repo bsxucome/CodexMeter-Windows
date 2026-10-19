@@ -17,6 +17,8 @@ Windows 任务栏与托盘客户端，参考 [raycalrui/CodexMeter](https://gith
 
 [Windows 自动构建已通过](https://github.com/bsxucome/CodexMeter-Windows/actions/runs/39182365683)，对应修复提交 `0256625`。Framework 和 .NET 10 构建、测试及构建产物上传均完成，可在该运行页面的 Artifacts 中获取构建包。详细证据见 [验证记录](windows/VERIFICATION.md)。
 
-维护者正式发版可双击 `Publish-Release.cmd`：同步已提交的 main，等待构建通过，再推送当前版本标签；标签构建与 Release 发布完成后，核对两个 ZIP 和两份 SHA-256 附件，结果保存到 `windows/artifacts/release-logs/latest-result.txt`。当前版本为 `0.7.0`，发行说明已准备。操作细节见 [发行说明](windows/RELEASES.md)。
+正式版本 [0.7.0 已发布](https://github.com/bsxucome/CodexMeter-Windows/releases/tag/windows-v0.7.0)，提供 .NET 10 自包含包、Framework 兼容包及各自的 SHA-256 文件。
+
+新版本可直接在 [Actions → Windows builds](https://github.com/bsxucome/CodexMeter-Windows/actions/workflows/windows.yml) 点击 **Run workflow**，选择 `main` 和 `operation=release`。同一次运行会校验版本、构建测试两种运行时、打包、创建标签并发布 Release；完成后在 Summary 查看发行链接。`operation=build` 仅构建打包。发布前需更新代码中的版本号；已发布版本保持不变。本地 `Publish-Release.cmd` 入口也保留。操作细节见 [发行说明](windows/RELEASES.md)。
 
 此工作目录包含新增的 Windows 客户端，**不是完整上游克隆**。当前环境无法通过 Git 下载仓库；macOS 文件未复制或修改。来源及同步限制见 [UPSTREAM.md](UPSTREAM.md)。

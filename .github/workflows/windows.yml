@@ -7,10 +7,36 @@ on:
   pull_request:
     paths: ['windows/**', '.github/workflows/windows.yml', 'UPSTREAM.md', 'LICENSE']
   workflow_dispatch:
+    inputs:
+      operation:
+        description: 'build: 构建和打包；release: 构建、打包并发布新版本'
+        type: choice
+        default: build
+        options: [build, release]
 permissions:
   contents: read
 jobs:
+  plan:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate version and publication request
+        id: plan
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_OPERATION: ${{ inputs.operation || 'build' }}
+        run: ./windows/scripts/prepare-actions-release.ps1
   build:
+    needs: plan
     runs-on: windows-latest
     timeout-minutes: 30
     strategy:
@@ -20,6 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/setup-dotnet@v6
         if: matrix.runtime == 'DotNet'
@@ -40,6 +67,7 @@ jobs:
           ./windows/scripts/publish-ownership-smoke.ps1
           ./windows/scripts/publish-flow-smoke.ps1
           ./windows/scripts/release-scripts-smoke.ps1
+          ./windows/scripts/actions-release-smoke.ps1
           ./windows/scripts/update-process-smoke.ps1
           ./windows/scripts/ui-smoke.ps1
           ./windows/scripts/indicator-smoke.ps1
@@ -47,12 +75,12 @@ jobs:
           ./windows/scripts/advanced-smoke.ps1
           ./windows/scripts/release-smoke.ps1
       - name: Sign Windows update manifests when a release key is configured
-        if: startsWith(github.ref, 'refs/tags/windows-v')
+        if: needs.plan.outputs.publish == 'true' && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/windows-v')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release'))
         shell: powershell
         env:
           CODEXMETER_RELEASE_KEY_XML: ${{ secrets.WINDOWS_UPDATE_PRIVATE_KEY_XML }}
           REPOSITORY: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
           BUILD_RUNTIME: ${{ matrix.runtime }}
         run: |
           $version = $env:RELEASE_TAG.Substring(9)
@@ -75,15 +103,19 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   release:
-    if: startsWith(github.ref, 'refs/tags/windows-v')
-    needs: build
+    if: needs.plan.outputs.publish == 'true' && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/windows-v')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release'))
+    needs: [plan, build]
     runs-on: windows-latest
     timeout-minutes: 10
     permissions:
       contents: write
+    concurrency:
+      group: windows-release-${{ github.repository }}-${{ needs.plan.outputs.tag }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/download-artifact@v8
         with:
@@ -95,5 +127,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: ./windows/scripts/publish-release.ps1 -Repository $env:REPOSITORY -Tag $env:RELEASE_TAG -Directory release-assets
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: ./windows/scripts/publish-release.ps1 -Repository $env:REPOSITORY -Tag $env:RELEASE_TAG -Directory release-assets -CreateTag -Commit $env:SOURCE_COMMIT

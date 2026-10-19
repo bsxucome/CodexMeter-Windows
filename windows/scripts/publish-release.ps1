@@ -1,7 +1,9 @@
 param(
     [Parameter(Mandatory=$true)][ValidatePattern('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')][string]$Repository,
     [Parameter(Mandatory=$true)][ValidatePattern('^windows-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$')][string]$Tag,
-    [Parameter(Mandatory=$true)][string]$Directory
+    [Parameter(Mandatory=$true)][string]$Directory,
+    [switch]$CreateTag,
+    [ValidatePattern('^[a-f0-9]{40}$')][string]$Commit
 )
 $ErrorActionPreference = 'Stop'
 $version = $Tag.Substring(9)
@@ -23,6 +25,16 @@ $text += if ($feeds.Count) { "Signed Windows update manifests and public keys ar
 $preparedNotes = Join-Path (Split-Path $PSScriptRoot -Parent) ("releases/$version.md")
 if (Test-Path -LiteralPath $preparedNotes) { $text = [IO.File]::ReadAllText($preparedNotes, [Text.Encoding]::UTF8) + "`n`n---`n`n" + $text }
 [IO.File]::WriteAllText($notes, $text, (New-Object Text.UTF8Encoding($false)))
+if ($CreateTag) {
+    if (!$Commit) { throw 'The immutable build commit is required to create a release tag.' }
+    $actualCommit = & git rev-parse HEAD
+    if ($LASTEXITCODE -ne 0 -or $actualCommit -ne $Commit) { throw 'The checked-out source does not match the built commit.' }
+    . (Join-Path $PSScriptRoot 'actions-release-common.ps1')
+    $projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+    if ((Read-ActionsProductVersion $projectRoot) -ne $version) { throw 'Release tag does not match the product version.' }
+    Assert-ActionsReleaseAvailable -Repository $Repository -Tag $Tag -Commit $Commit
+    New-ActionsReleaseTag -Repository $Repository -Tag $Tag -Commit $Commit
+}
 $arguments = @('release','create',$Tag,'--repo',$Repository,'--verify-tag','--title',"CodexMeter Windows $version",'--notes-file',$notes)
 if ($version.Contains('-')) { $arguments += '--prerelease' }
 & gh @arguments @assets
@@ -35,4 +47,11 @@ if ($feeds.Count) {
     }
     & gh release upload windows-update-feed --repo $Repository --clobber @($feeds.FullName)
     if ($LASTEXITCODE -ne 0) { throw 'Signed feed publication failed; versioned release assets remain available.' }
+}
+if ($CreateTag) {
+    $url = Confirm-ActionsPublishedRelease -Repository $Repository -Tag $Tag -Commit $Commit
+    if ($env:GITHUB_STEP_SUMMARY) {
+        [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, "Published [CodexMeter Windows $version]($url) with both portable packages and SHA-256 files.`n", (New-Object Text.UTF8Encoding($false)))
+    }
+    Write-Output ('Published and verified: ' + $url)
 }

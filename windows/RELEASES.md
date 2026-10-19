@@ -1,6 +1,8 @@
 # Windows 发行与更新接入
 
-更新源保持未配置，直到有独立的 Windows 发行地址与可信签名公钥。程序不使用 raycalrui/CodexMeter 的 macOS 发行包。清单签名使用 RSA PKCS#1 SHA-256，和 Windows Authenticode 是两套独立机制：前者验证更新发布者，后者用于 Windows 对可执行文件的签名识别。
+[0.7.0 正式版已发布](https://github.com/bsxucome/CodexMeter-Windows/releases/tag/windows-v0.7.0)。`windows-v0.7.0` 对应提交 `0768290fbcd91c5ecfd6cd618ea948c09199bd57`；[标签构建及发版任务](https://github.com/bsxucome/CodexMeter-Windows/actions/runs/39246290825)已成功。两个运行时的 ZIP 和两份 SHA-256 文件均已上传，中文发行说明已包含在 Release 页面中。
+
+便携包已有独立 Windows 发行地址；签名更新源保持未配置，等待正式更新清单与可信签名公钥。程序不使用 raycalrui/CodexMeter 的 macOS 发行包。清单签名使用 RSA PKCS#1 SHA-256，和 Windows Authenticode 是两套独立机制：前者验证更新发布者，后者用于 Windows 对可执行文件的签名识别。
 
 ## 构建
 
@@ -11,7 +13,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/build.ps1 -R
 
 DotNet 需要 .NET 10 SDK，生成 win-x64 自包含文件夹与 ZIP；Framework 生成 Windows 4.8+ 兼容包。可用 `windows/scripts/setup-dotnet.ps1` 从微软官方元数据下载 SDK 并核对 SHA-512，只安装到项目 `.tools/dotnet`。ZIP 根目录直接包含应用文件，测试失败阻止打包，SHA-256 伴随文件写在 ZIP 旁。
 
-`.github/workflows/windows.yml` 在 main／PR／手动触发时构建两种运行时并保存 artifacts；`windows-v*` 标签在两种构建均通过后创建公开 Release。只有发行任务获得 contents:write，其余任务只读。main 的 [39182365683 次构建](https://github.com/bsxucome/CodexMeter-Windows/actions/runs/39182365683)已在 `0256625` 成功，包含两种运行时的构建、测试和产物上传；标签发版仍需独立完成。
+`.github/workflows/windows.yml` 将版本预检、两种运行时的构建测试与打包、版本标签创建和 Release 发布放在同一条流水线。普通 main／PR 提交只构建打包；手动选择 `release` 或推送 `windows-v*` 标签时发版。只有发行任务获得 contents:write，其余任务只读。此前 `0768290` 的标签构建与 0.7.0 正式发版已完成；新增的手动一体化入口需在同步工作流后使用。
 
 ## 发布到 GitHub
 
@@ -41,7 +43,17 @@ git -c safe.directory="D:/Codex Project/CodexMeter" -C "D:\Codex Project\CodexMe
 
 单独采集最新一次工作流可双击 `Collect-CI-Logs.cmd`；它不推送、不写 GitHub。最新成功不会被更早的失败覆盖。两种入口复用正常用户会话已登录的 GitHub CLI，当前隔离 Codex 桌面不读取 Edge 登录信息。日志留在被 Git 忽略的 artifacts 内。
 
-正式发版建议直接双击项目根目录的 `Publish-Release.cmd`，也可运行：
+新版本推荐直接在 GitHub Actions 发版：
+
+1. 更新并提交版本号，使 `ProductVersion.cs` 的 `Current`／`Assembly`、Windows 项目的 `Version` 和 `app.manifest` 版本一致。例如下一版本使用 `0.7.1`／`0.7.1.0`，并可添加 `windows/releases/0.7.1.md`。
+2. 打开仓库 **Actions → Windows builds → Run workflow**，分支选择 `main`，`operation` 选择 `release`。
+3. 同一次运行依次完成版本预检、Framework／.NET 10 构建测试、打包、SHA-256 校验、创建 `windows-v<版本>` 标签以及发布 Release。结束后在发布步骤的 Summary 点击发行链接。
+
+`operation=build` 仅构建、测试和保存 artifacts；它可以用于 PR 或手动检查，当前版本已发布也可执行。`release` 使用仓库中的版本号，不自动增加版本，也不修改源码。0.7.0 已发布，再次选择相同版本会在构建前提示更新版本号。手动发版只允许从 main 运行；已有标签指向另一提交、已有 Release、版本元数据不一致或任一构建失败都会阻止发布。
+
+三个任务都检出本次事件固定的提交 SHA。发行任务先核对两个 ZIP 的校验文件与检出提交，再创建标签；同一版本的发行任务串行执行，不覆盖标签或已发布资产。使用 Actions 自带的 `GITHUB_TOKEN`，不需要额外个人令牌。由它创建标签通常不会再次触发 push 工作流，因此发版继续在当前运行中完成。可选更新签名密钥的配置方式保持不变。
+
+也可继续使用项目根目录的 `Publish-Release.cmd` 本地入口，或运行：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/release-github.ps1
@@ -88,4 +100,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/sign-release
 
 确认新版正常使用后，可退出程序，手动删除不再需要的旧版本目录和 `updates\staging` 下载缓存。启动失败的新目录也会保留以供检查；当前不递归删除程序目录。历史、设置、恢复前备份和加密渠道配置独立保存在 LocalApplicationData，不随便携程序目录移动。
 
-v0.7.0 通过隔离的真实辅助进程、WPF 新版启动、旧进程回退及篡改包拒绝测试；进程路径被限制在专属 GUID 测试目录，没有修改正式安装。两种运行时的 main 托管构建已通过；正式标签发版、签名更新源、Authenticode 和正常账号环境更新仍分别验收，不能由 main 成功推断。正常桌面的其余检查见 ACCEPTANCE.md。
+v0.7.0 通过隔离的真实辅助进程、WPF 新版启动、旧进程回退及篡改包拒绝测试；进程路径被限制在专属 GUID 测试目录，没有修改正式安装。两种运行时的 main 托管构建及正式标签发版已完成；签名更新源、Authenticode 和正常账号环境更新仍分别验收，不能由发版成功推断。正常桌面的其余检查见 ACCEPTANCE.md。
