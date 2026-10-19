@@ -64,7 +64,7 @@ Push-Location -LiteralPath $projectRoot
 try {
     if (!(Test-Path -LiteralPath '.git')) { Invoke-PublishGit init --initial-branch=main; if ($LASTEXITCODE -ne 0) { throw 'Git initialization failed.' } }
     $selection = @('.gitattributes','.gitignore','.github','AGENTS.md','CONTRIBUTING.md','LICENSE','README.md','UPSTREAM.md','windows')
-    foreach ($launcher in @('Collect-CI-Logs.cmd','Sync-CI-Fix.cmd')) { if (Test-Path -LiteralPath $launcher) { $selection += $launcher } }
+    foreach ($launcher in @('Collect-CI-Logs.cmd','Sync-CI-Fix.cmd','Publish-Release.cmd')) { if (Test-Path -LiteralPath $launcher) { $selection += $launcher } }
     if (Test-Path -LiteralPath 'docs') { $selection += 'docs' }
     Invoke-PublishGit add -- @selection
     if ($LASTEXITCODE -ne 0) { throw 'Source staging failed.' }

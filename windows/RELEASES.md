@@ -11,7 +11,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/build.ps1 -R
 
 DotNet 需要 .NET 10 SDK，生成 win-x64 自包含文件夹与 ZIP；Framework 生成 Windows 4.8+ 兼容包。可用 `windows/scripts/setup-dotnet.ps1` 从微软官方元数据下载 SDK 并核对 SHA-512，只安装到项目 `.tools/dotnet`。ZIP 根目录直接包含应用文件，测试失败阻止打包，SHA-256 伴随文件写在 ZIP 旁。
 
-`.github/workflows/windows.yml` 在 main／PR／手动触发时构建两种运行时并保存 artifacts；`windows-v*` 标签在两种构建均通过后创建公开 Release。只有发行任务获得 contents:write，其余任务只读。当前尚未推送仓库，托管工作流未运行，本地只生成 Framework 包。
+`.github/workflows/windows.yml` 在 main／PR／手动触发时构建两种运行时并保存 artifacts；`windows-v*` 标签在两种构建均通过后创建公开 Release。只有发行任务获得 contents:write，其余任务只读。main 的 [39182365683 次构建](https://github.com/bsxucome/CodexMeter-Windows/actions/runs/39182365683)已在 `0256625` 成功，包含两种运行时的构建、测试和产物上传；标签发版仍需独立完成。
 
 ## 发布到 GitHub
 
@@ -41,14 +41,24 @@ git -c safe.directory="D:/Codex Project/CodexMeter" -C "D:\Codex Project\CodexMe
 
 单独采集最新一次工作流可双击 `Collect-CI-Logs.cmd`；它不推送、不写 GitHub。最新成功不会被更早的失败覆盖。两种入口复用正常用户会话已登录的 GitHub CLI，当前隔离 Codex 桌面不读取 Edge 登录信息。日志留在被 Git 忽略的 artifacts 内。
 
-首次 main 构建通过并检查 artifacts 后，再创建发行标签：
+正式发版建议直接双击项目根目录的 `Publish-Release.cmd`，也可运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/release-github.ps1
+```
+
+入口复用当前用户的 Git／GitHub CLI 登录，只操作 `bsxucome/CodexMeter-Windows`。它要求 main 且已跟踪文件无未提交改动，不自动暂存或提交。先同步现有提交并等待该 SHA 的 main 构建通过，再按 `ProductVersion.Current` 创建并推送标签；随后等待同一 SHA、同一标签的构建与发行任务完成。既有本地或远程标签指向其他提交时停止，不覆盖标签。已有匹配版本的公开 Release 且四项资产齐全时直接返回现有发行地址。
+
+发布结果保存在 `windows/artifacts/release-logs/latest-result.txt` 和 `.json`。只有实际查询到公开 Release、正确版本及两个已上传 ZIP 和各自的 SHA-256 附件后，才记录 `published`；构建失败、未完成、网络错误或附件缺失均不记录成功。日志采集器的 `-Reference` 可选 `main` 或 Windows 版本标签，并写出机器可读的 `ci-logs/latest-result.json`，避免把同一提交的 main 成功误认为标签发版成功。中途断网可重跑相同入口，保留已有提交与标签。
+
+如果自行维护发行过程，也可在确认 main 构建通过后手动创建标签：
 
 ```powershell
 git tag windows-v0.7.0
 git push origin windows-v0.7.0
 ```
 
-标签必须与 `ProductVersion.Current` 一致。CI 重新构建／检查两种包；`publish-release.ps1` 逐一复核 ZIP 的 SHA-256，再发布版本资产，不覆盖已有版本 Release。没有更新私钥 secret 时只发布便携包，不提供签名更新源。
+标签必须与 `ProductVersion.Current` 一致。CI 重新构建／检查两种包；`publish-release.ps1` 逐一复核 ZIP 的 SHA-256，再发布版本资产，不覆盖已有版本 Release。版本说明从 `windows/releases/<版本>.md` 读取，再补充实际签名资产状态；`0.7.0.md` 已包含下载选择、功能和已知使用范围。没有更新私钥 secret 时只发布便携包，不提供签名更新源。
 
 如需更新源，在仓库 Actions secret `WINDOWS_UPDATE_PRIVATE_KEY_XML` 配置自己的 RSA 私钥。标签构建签名每个运行时的 Stable／Beta 清单及公钥，并同步到独立 `windows-update-feed` Release（不标记为 latest）。拟用地址为 `https://github.com/bsxucome/CodexMeter-Windows/releases/download/windows-update-feed/{channel}-{runtime}.json`；这只是上线后的目标，当前不可作为可用发行源。公钥仍需通过可信渠道手动配置；程序默认不会信任网上新出现的公钥。
 
@@ -78,4 +88,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/sign-release
 
 确认新版正常使用后，可退出程序，手动删除不再需要的旧版本目录和 `updates\staging` 下载缓存。启动失败的新目录也会保留以供检查；当前不递归删除程序目录。历史、设置、恢复前备份和加密渠道配置独立保存在 LocalApplicationData，不随便携程序目录移动。
 
-v0.7.0 通过隔离的真实辅助进程、WPF 新版启动、旧进程回退及篡改包拒绝测试；进程路径被限制在专属 GUID 测试目录，没有修改正式安装。真实托管源、Authenticode 和正常账号环境更新仍未验收；.NET 10 本地无 SDK，CI 定义不代表已成功运行。正常桌面的其余检查见 ACCEPTANCE.md。
+v0.7.0 通过隔离的真实辅助进程、WPF 新版启动、旧进程回退及篡改包拒绝测试；进程路径被限制在专属 GUID 测试目录，没有修改正式安装。两种运行时的 main 托管构建已通过；正式标签发版、签名更新源、Authenticode 和正常账号环境更新仍分别验收，不能由 main 成功推断。正常桌面的其余检查见 ACCEPTANCE.md。

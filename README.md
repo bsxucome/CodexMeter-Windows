@@ -15,6 +15,8 @@ Windows 任务栏与托盘客户端，参考 [raycalrui/CodexMeter](https://gith
 
 构建排查可双击 `Collect-CI-Logs.cmd`。维护者在此工作目录提交修正后，可双击 `Sync-CI-Fix.cmd`：同步已提交的 main，等待对应提交的 Windows 构建结束，并把结果保存到 `windows/artifacts/ci-logs/latest-result.txt`。同步入口仅用于此仓库，校验 origin，保留现有登录且不强推。
 
-最近一轮 Actions 中，.NET 10 主程序已编译成功，之前的发布测试也已通过。后续发现的损坏 JSON 兜底与界面测试问题已修正；完整构建、测试和产物上传仍待下一轮验证。详细证据见 [验证记录](windows/VERIFICATION.md)。
+[Windows 自动构建已通过](https://github.com/bsxucome/CodexMeter-Windows/actions/runs/39182365683)，对应修复提交 `0256625`。Framework 和 .NET 10 构建、测试及构建产物上传均完成，可在该运行页面的 Artifacts 中获取构建包。详细证据见 [验证记录](windows/VERIFICATION.md)。
+
+维护者正式发版可双击 `Publish-Release.cmd`：同步已提交的 main，等待构建通过，再推送当前版本标签；标签构建与 Release 发布完成后，核对两个 ZIP 和两份 SHA-256 附件，结果保存到 `windows/artifacts/release-logs/latest-result.txt`。当前版本为 `0.7.0`，发行说明已准备。操作细节见 [发行说明](windows/RELEASES.md)。
 
 此工作目录包含新增的 Windows 客户端，**不是完整上游克隆**。当前环境无法通过 Git 下载仓库；macOS 文件未复制或修改。来源及同步限制见 [UPSTREAM.md](UPSTREAM.md)。

@@ -20,6 +20,8 @@ $assets += $feeds.FullName
 $notes = Join-Path $Directory 'release-notes.md'
 $text = "CodexMeter for Windows $version`n`n.NET 10 self-contained and .NET Framework 4.8+ portable x64 packages. Extract all files before launching. Exit the old version first. See README.md, PARITY.md and VERIFICATION.md for implemented features and desktop acceptance limits.`n`n"
 $text += if ($feeds.Count) { "Signed Windows update manifests and public keys are attached. Configure only a public key obtained through a trusted channel.`n" } else { "No update signing secret was configured; no signed feed is published. Code-signing status is documented in the packaged verification notes.`n" }
+$preparedNotes = Join-Path (Split-Path $PSScriptRoot -Parent) ("releases/$version.md")
+if (Test-Path -LiteralPath $preparedNotes) { $text = [IO.File]::ReadAllText($preparedNotes, [Text.Encoding]::UTF8) + "`n`n---`n`n" + $text }
 [IO.File]::WriteAllText($notes, $text, (New-Object Text.UTF8Encoding($false)))
 $arguments = @('release','create',$Tag,'--repo',$Repository,'--verify-tag','--title',"CodexMeter Windows $version",'--notes-file',$notes)
 if ($version.Contains('-')) { $arguments += '--prerelease' }

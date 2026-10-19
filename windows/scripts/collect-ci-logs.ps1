@@ -1,6 +1,7 @@
 param(
     [ValidatePattern('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')][string]$Repository = 'bsxucome/CodexMeter-Windows',
     [ValidatePattern('^[a-fA-F0-9]{40}$')][string]$ExpectedCommit,
+    [ValidatePattern('^(main|windows-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$')][string]$Reference = 'main',
     [switch]$WaitForCompletion
 )
 $ErrorActionPreference = 'Stop'
@@ -30,9 +31,9 @@ function Read-GitHub([string[]]$Arguments, [string]$OutputName) {
 }
 $deadline = [DateTimeOffset]::UtcNow.AddMinutes(35)
 do {
-    $runsJson = Read-GitHub -Arguments @('run','list','--repo',$Repository,'--workflow','windows.yml','--branch','main','--limit','20','--json','databaseId,headSha,status,conclusion,url,workflowName') -OutputName 'runs.json'
+    $runsJson = Read-GitHub -Arguments @('run','list','--repo',$Repository,'--workflow','windows.yml','--branch',$Reference,'--limit','20','--json','databaseId,headSha,headBranch,status,conclusion,url,workflowName') -OutputName 'runs.json'
     $runs = ConvertFrom-Json -InputObject $runsJson
-    $selected = @($runs | Where-Object { !$ExpectedCommit -or $_.headSha -eq $ExpectedCommit } | Select-Object -First 1)
+    $selected = @($runs | Where-Object { (!$ExpectedCommit -or $_.headSha -eq $ExpectedCommit) -and ($_.headBranch -eq $Reference -or (!$_.headBranch -and $Reference -eq 'main')) } | Select-Object -First 1)
     $run = if ($selected.Count) { $selected[0] } else { $null }
     if (!$WaitForCompletion -or ($run -and $run.status -eq 'completed') -or [DateTimeOffset]::UtcNow -ge $deadline) { break }
     $state = if ($run) { $run.status } else { 'waiting for the pushed commit to appear' }
@@ -41,8 +42,9 @@ do {
 } while ($true)
 $summaryPath = Join-Path $destination 'latest-result.txt'
 if (!$run) {
-    $message = 'No matching main run found.' + $(if ($ExpectedCommit) { ' Expected commit: ' + $ExpectedCommit } else { '' })
+    $message = 'No matching ' + $Reference + ' run found.' + $(if ($ExpectedCommit) { ' Expected commit: ' + $ExpectedCommit } else { '' })
     [IO.File]::WriteAllText($summaryPath, $message)
+    [IO.File]::WriteAllText((Join-Path $destination 'latest-result.json'), (@{ repository = $Repository; reference = $Reference; commit = $ExpectedCommit; status = 'not_found'; conclusion = ''; url = '' } | ConvertTo-Json))
     Write-Output $message
     return
 }
@@ -54,6 +56,7 @@ $summary = 'Repository: ' + $Repository + "`r`nRun: " + $run.url + "`r`nCommit: 
 $summary = [regex]::Replace($summary, '(?i)(https?://)[^/\s@]+@', '$1[redacted]@')
 $summary = [regex]::Replace($summary, 'github_pat_[A-Za-z0-9_]+|gh[pousr]_[A-Za-z0-9]{20,}', '[redacted]')
 [IO.File]::WriteAllText($summaryPath, $summary, (New-Object Text.UTF8Encoding($true)))
+[IO.File]::WriteAllText((Join-Path $destination 'latest-result.json'), (@{ repository = $Repository; reference = $Reference; commit = $run.headSha; status = $run.status; conclusion = $run.conclusion; url = $run.url; runId = $runId } | ConvertTo-Json))
 if ($run.conclusion -eq 'failure') { [IO.File]::WriteAllText((Join-Path $destination 'latest-failure.txt'), $summary, (New-Object Text.UTF8Encoding($true))) }
 Write-Output ('Run ' + $runId + ': ' + $run.status + ' / ' + $run.conclusion)
 Write-Output ('Saved: ' + $summaryPath)
