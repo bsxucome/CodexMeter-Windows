@@ -37,7 +37,7 @@ public static class GitHubFixture {
         }
         if (command == "repo create") {
             int description = Array.IndexOf(args, "--description");
-            if (!args.Contains("--public") || args[2] != "fixture-user/Fixture" || description < 0 || description + 2 != args.Length || !args[description + 1].Contains("optional notifications.")) return 96;
+            if (!args.Contains("--public") || args[2] != "fixture-user/Fixture" || description < 0 || description + 2 != args.Length || !args[description + 1].StartsWith("\u4e2d\u6587 ") || !args[description + 1].Contains("optional notifications.")) return 96;
             var info = new ProcessStartInfo(Environment.GetEnvironmentVariable("CODEXMETER_FIXTURE_GIT"), "remote add origin \"" + Path.Combine(root, "windows/artifacts/remote.git") + "\"") { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = root };
             using (var git = Process.Start(info)) { git.WaitForExit(); if (git.ExitCode != 0) return git.ExitCode; }
             File.WriteAllText(Path.Combine(root, "windows/artifacts/created"), "fixture");
@@ -58,7 +58,9 @@ public static class GitHubFixture {
     foreach ($scenario in @('success','login-failure','existing-repository','push-rejected')) {
         $root = Join-Path $fixture $scenario
         foreach ($directory in @('.github','windows/scripts','windows/artifacts')) { [IO.Directory]::CreateDirectory((Join-Path $root $directory)) | Out-Null }
-        foreach ($file in @('AGENTS.md','CONTRIBUTING.md','LICENSE','README.md','UPSTREAM.md','.github/fixture.txt')) { [IO.File]::WriteAllText((Join-Path $root $file), "Publish fixture`n") }
+        foreach ($file in @('AGENTS.md','CONTRIBUTING.md','LICENSE','README.md','README.en.md','UPSTREAM.md','.github/fixture.txt')) { [IO.File]::WriteAllText((Join-Path $root $file), "Publish fixture`n") }
+        $description = [string][char]0x4e2d + [char]0x6587 + ' fixture description with spaces and optional notifications.'
+        [IO.File]::WriteAllText((Join-Path $root '.github/repository-profile.json'), (@{ description = $description } | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
         [IO.File]::WriteAllText((Join-Path $root '.gitattributes'), "* text=auto`n*.ps1 text eol=crlf`n")
         [IO.File]::WriteAllText((Join-Path $root '.gitignore'), "windows/artifacts/`n")
         [IO.File]::WriteAllText((Join-Path $root '.fixture'), 'CodexMeter.PublishFixture.v1')
@@ -86,6 +88,8 @@ public static class GitHubFixture {
             $head = & $gitPath -C $root rev-parse HEAD
             $pushed = & $gitPath --git-dir=$remote rev-parse refs/heads/main
             if ($LASTEXITCODE -ne 0 -or $head -ne $pushed -or $calls -notcontains 'repo create' -or $calls -notcontains 'auth setup-git') { throw 'Fixture did not complete actual local Git push.' }
+            $english = & $gitPath --git-dir=$remote show 'main:README.en.md'
+            if ($LASTEXITCODE -ne 0 -or $english -ne 'Publish fixture') { throw 'English README was omitted from the published source.' }
             Write-Output 'PASS logged-out stderr reaches authorization; missing repository reaches creation; stderr progress permits actual local Git commit/push'
         } elseif ($scenario -eq 'push-rejected') {
             if ($failure -notlike '*Push failed (Git exit code 1)*' -or $failure -notlike '*Fixture push rejected before refs update*') { throw 'Actual push rejection reason was not preserved.' }

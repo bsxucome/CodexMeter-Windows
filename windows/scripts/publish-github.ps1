@@ -1,6 +1,6 @@
 param(
     [string]$Owner,
-    [ValidatePattern('^[A-Za-z0-9_.-]+$')][string]$RepositoryName = 'CodexMeter-Windows',
+    [ValidatePattern('^[A-Za-z0-9_.-]+$')][string]$RepositoryName = 'CodexMeter-for-Windows',
     [ValidateSet('public','private')][string]$Visibility = 'public',
     [switch]$PrepareOnly
 )
@@ -64,7 +64,8 @@ Push-Location -LiteralPath $projectRoot
 try {
     if (!(Test-Path -LiteralPath '.git')) { Invoke-PublishGit init --initial-branch=main; if ($LASTEXITCODE -ne 0) { throw 'Git initialization failed.' } }
     $selection = @('.gitattributes','.gitignore','.github','AGENTS.md','CONTRIBUTING.md','LICENSE','README.md','UPSTREAM.md','windows')
-    foreach ($launcher in @('Collect-CI-Logs.cmd','Sync-CI-Fix.cmd','Publish-Release.cmd')) { if (Test-Path -LiteralPath $launcher) { $selection += $launcher } }
+    if (Test-Path -LiteralPath 'README.en.md') { $selection += 'README.en.md' }
+    foreach ($launcher in @('Collect-CI-Logs.cmd','Sync-CI-Fix.cmd','Publish-Release.cmd','Update-GitHub-Page.cmd')) { if (Test-Path -LiteralPath $launcher) { $selection += $launcher } }
     if (Test-Path -LiteralPath 'docs') { $selection += 'docs' }
     Invoke-PublishGit add -- @selection
     if ($LASTEXITCODE -ne 0) { throw 'Source staging failed.' }
@@ -109,7 +110,10 @@ try {
     $exists = $LASTEXITCODE -eq 0
     if ($exists -and !$origin) { throw 'That repository already exists; choose a new repository name. Nothing was pushed.' }
     if (!$exists) {
-        Invoke-PublishNative -FilePath $ghPath -Arguments @('repo','create',$repository,"--$Visibility",'--source','.','--remote','origin','--description','Windows taskbar companion for Codex quota, history and optional notifications. Independent adaptation of raycalrui/CodexMeter.')
+        $description = 'CodexMeter for Windows: taskbar quota monitoring, history, Token activity and optional reminders.'
+        $profilePath = Join-Path $projectRoot '.github/repository-profile.json'
+        if (Test-Path -LiteralPath $profilePath) { $description = (ConvertFrom-Json -InputObject ([IO.File]::ReadAllText($profilePath))).description }
+        Invoke-PublishNative -FilePath $ghPath -Arguments @('repo','create',$repository,"--$Visibility",'--source','.','--remote','origin','--description',$description)
         if ($LASTEXITCODE -ne 0) { throw 'Repository creation failed.' }
     }
     Invoke-PublishNative -FilePath $ghPath -Arguments @('auth','setup-git','--hostname','github.com')

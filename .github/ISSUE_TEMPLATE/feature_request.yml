@@ -1,0 +1,25 @@
+name: 功能建议
+description: 分享使用场景与改进建议。支持中文或英文。
+body:
+  - type: markdown
+    attributes:
+      value: 欢迎中文或英文建议（Chinese / English welcome）。请优先说明你希望解决的问题。
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景与遇到的问题
+      placeholder: 你在什么情况下需要这个功能？目前有什么不方便？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的功能或交互
+      placeholder: 请描述理想的使用方式，也可以附上示意图。
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 补充说明（可选）
+      description: 如有相关功能、替代方案或参考链接，可在这里补充；请勿提交私人信息。

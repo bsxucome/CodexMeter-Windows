@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 使用与配置指南
+    url: https://github.com/bsxucome/CodexMeter-for-Windows/blob/main/windows/README.md
+    about: 先了解安装、任务栏显示、通知和数据管理方法。
+  - name: English documentation
+    url: https://github.com/bsxucome/CodexMeter-for-Windows/blob/main/README.en.md
+    about: Features, downloads, setup, and privacy information in English.

@@ -1,28 +1,32 @@
-name: Windows problem
-description: Report a reproducible problem in the Windows adaptation
+name: 问题反馈
+description: 报告可复现的问题，帮助改进 CodexMeter for Windows。支持中文或英文。
 body:
+  - type: markdown
+    attributes:
+      value: 请先查看已有问题。欢迎使用中文或英文描述（Chinese / English welcome）。
   - type: input
     id: version
     attributes:
-      label: CodexMeter version and package runtime
-      placeholder: 0.7.0, framework-x64 or dotnet10-x64
+      label: 应用版本与下载包
+      placeholder: 例如：0.7.0，framework-x64 或 dotnet10-x64
     validations:
       required: true
   - type: textarea
     id: desktop
     attributes:
-      label: Windows and taskbar setup
-      description: Windows version, monitor count, scaling, taskbar alignment and auto-hide setting.
+      label: Windows 与任务栏环境
+      description: 请填写 Windows 版本、显示器数量、缩放比例、任务栏对齐方式和自动隐藏设置。
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Steps, expected behavior and actual behavior
+      label: 复现步骤、预期表现与实际表现
+      placeholder: 请按顺序描述操作，以及期望看到和实际看到的结果。
     validations:
       required: true
   - type: textarea
     id: details
     attributes:
-      label: Optional screenshots or diagnostic summary
-      description: Remove account details, bot tokens, webhook URLs and private history. Do not attach authentication files or secret configuration.
+      label: 截图或诊断摘要（可选）
+      description: 提交前请移除账号信息、令牌、Webhook 地址与私人历史。不要附带认证文件或私密配置。

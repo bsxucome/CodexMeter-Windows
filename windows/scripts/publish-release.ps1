@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][ValidatePattern('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')][string]$Repository,
     [Parameter(Mandatory=$true)][ValidatePattern('^windows-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$')][string]$Tag,
     [Parameter(Mandatory=$true)][string]$Directory,
@@ -20,8 +20,8 @@ foreach ($runtime in @('framework-x64','dotnet10-x64')) {
 $feeds = @(Get-ChildItem -LiteralPath $Directory -File -Filter '*.json' | Where-Object { $_.Name -match '^(stable|beta)-(framework|dotnet10)-x64\.json$|^public-key-(framework|dotnet10)-x64\.json$' })
 $assets += $feeds.FullName
 $notes = Join-Path $Directory 'release-notes.md'
-$text = "CodexMeter for Windows $version`n`n.NET 10 self-contained and .NET Framework 4.8+ portable x64 packages. Extract all files before launching. Exit the old version first. See README.md, PARITY.md and VERIFICATION.md for implemented features and desktop acceptance limits.`n`n"
-$text += if ($feeds.Count) { "Signed Windows update manifests and public keys are attached. Configure only a public key obtained through a trusted channel.`n" } else { "No update signing secret was configured; no signed feed is published. Code-signing status is documented in the packaged verification notes.`n" }
+$text = "## 下载与使用`n`n提供 .NET 10 自包含包与 .NET Framework 4.8+ 兼容包，均为 Windows x64 便携版。请先退出旧版，完整解压后运行 CodexMeter.exe。使用说明、功能范围与验证记录见包内文档。`n`n[中文介绍](https://github.com/$Repository#readme) · [English](https://github.com/$Repository/blob/main/README.en.md)`n`n"
+$text += if ($feeds.Count) { "已附签名更新清单与公钥；请仅配置信任渠道获取的公钥。`n" } else { "当前未配置更新签名密钥，本次不发布签名更新源。代码签名状态见包内验证记录。`n" }
 $preparedNotes = Join-Path (Split-Path $PSScriptRoot -Parent) ("releases/$version.md")
 if (Test-Path -LiteralPath $preparedNotes) { $text = [IO.File]::ReadAllText($preparedNotes, [Text.Encoding]::UTF8) + "`n`n---`n`n" + $text }
 [IO.File]::WriteAllText($notes, $text, (New-Object Text.UTF8Encoding($false)))
@@ -35,14 +35,14 @@ if ($CreateTag) {
     Assert-ActionsReleaseAvailable -Repository $Repository -Tag $Tag -Commit $Commit
     New-ActionsReleaseTag -Repository $Repository -Tag $Tag -Commit $Commit
 }
-$arguments = @('release','create',$Tag,'--repo',$Repository,'--verify-tag','--title',"CodexMeter Windows $version",'--notes-file',$notes)
+$arguments = @('release','create',$Tag,'--repo',$Repository,'--verify-tag','--title',"CodexMeter for Windows $version",'--notes-file',$notes)
 if ($version.Contains('-')) { $arguments += '--prerelease' }
 & gh @arguments @assets
 if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed. Existing releases/assets were not overwritten.' }
 if ($feeds.Count) {
     & gh release view windows-update-feed --repo $Repository *> $null
     if ($LASTEXITCODE -ne 0) {
-        & gh release create windows-update-feed --repo $Repository --target main --latest=false --title 'Windows signed update feeds' --notes 'Stable and beta manifests, separately signed for each Windows runtime. This release does not contain macOS packages.'
+        & gh release create windows-update-feed --repo $Repository --target main --latest=false --title 'Windows 签名更新源' --notes '提供各 Windows 运行时独立签名的稳定版与测试版更新清单。'
         if ($LASTEXITCODE -ne 0) { throw 'Could not create the Windows feed release.' }
     }
     & gh release upload windows-update-feed --repo $Repository --clobber @($feeds.FullName)
@@ -51,7 +51,7 @@ if ($feeds.Count) {
 if ($CreateTag) {
     $url = Confirm-ActionsPublishedRelease -Repository $Repository -Tag $Tag -Commit $Commit
     if ($env:GITHUB_STEP_SUMMARY) {
-        [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, "Published [CodexMeter Windows $version]($url) with both portable packages and SHA-256 files.`n", (New-Object Text.UTF8Encoding($false)))
+        [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, "已发布 [CodexMeter for Windows $version]($url)，包含两个运行时的便携包与 SHA-256 校验文件。`n", (New-Object Text.UTF8Encoding($false)))
     }
     Write-Output ('Published and verified: ' + $url)
 }

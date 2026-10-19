@@ -1,7 +1,7 @@
 param()
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
-$repository = 'bsxucome/CodexMeter-Windows'
+$repository = 'bsxucome/CodexMeter-for-Windows'
 $destination = Join-Path $projectRoot 'windows/artifacts/release-logs'
 [IO.Directory]::CreateDirectory($destination) | Out-Null
 $gitPath = (Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source

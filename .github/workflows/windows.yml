@@ -1,4 +1,4 @@
-name: Windows builds
+name: Windows 构建与发布
 on:
   push:
     tags: ['windows-v*']
@@ -17,6 +17,7 @@ permissions:
   contents: read
 jobs:
   plan:
+    name: 校验版本与发布请求
     runs-on: windows-latest
     timeout-minutes: 5
     outputs:
@@ -24,11 +25,12 @@ jobs:
       tag: ${{ steps.plan.outputs.tag }}
       publish: ${{ steps.plan.outputs.publish }}
     steps:
-      - uses: actions/checkout@v7
+      - name: 检出固定提交的源码
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Validate version and publication request
+      - name: 检查版本与发行条件
         id: plan
         shell: powershell
         env:
@@ -36,6 +38,7 @@ jobs:
           BUILD_OPERATION: ${{ inputs.operation || 'build' }}
         run: ./windows/scripts/prepare-actions-release.ps1
   build:
+    name: 构建与打包 (${{ matrix.runtime }})
     needs: plan
     runs-on: windows-latest
     timeout-minutes: 30
@@ -44,22 +47,24 @@ jobs:
       matrix:
         runtime: [Framework, DotNet]
     steps:
-      - uses: actions/checkout@v7
+      - name: 检出固定提交的源码
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/setup-dotnet@v6
+      - name: 安装 .NET 10 SDK
+        uses: actions/setup-dotnet@v6
         if: matrix.runtime == 'DotNet'
         with:
           dotnet-version: '10.0.x'
-      - name: Build, test and package
+      - name: 编译、测试与打包
         shell: powershell
         env:
           BUILD_RUNTIME: ${{ matrix.runtime }}
         run: |
           ./windows/scripts/validate-source.ps1
           ./windows/scripts/build.ps1 -Runtime $env:BUILD_RUNTIME -Publish
-      - name: Preview UI checks (Framework only, sequential)
+      - name: 发布工具与界面回归检查（Framework，串行执行）
         if: matrix.runtime == 'Framework'
         shell: powershell
         run: |
@@ -68,6 +73,7 @@ jobs:
           ./windows/scripts/publish-flow-smoke.ps1
           ./windows/scripts/release-scripts-smoke.ps1
           ./windows/scripts/sync-ci-smoke.ps1
+          ./windows/scripts/github-page-smoke.ps1
           ./windows/scripts/actions-release-smoke.ps1
           ./windows/scripts/update-process-smoke.ps1
           ./windows/scripts/ui-smoke.ps1
@@ -75,7 +81,7 @@ jobs:
           ./windows/scripts/features-smoke.ps1
           ./windows/scripts/advanced-smoke.ps1
           ./windows/scripts/release-smoke.ps1
-      - name: Sign Windows update manifests when a release key is configured
+      - name: 签署更新清单（需配置签名密钥）
         if: needs.plan.outputs.publish == 'true' && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/windows-v')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release'))
         shell: powershell
         env:
@@ -87,14 +93,15 @@ jobs:
           $version = $env:RELEASE_TAG.Substring(9)
           $source = [IO.File]::ReadAllText('windows/CodexMeter.Core/ProductVersion.cs')
           if ([regex]::Match($source, 'Current = "([^"]+)"').Groups[1].Value -ne $version) { throw 'Release tag does not match product version.' }
-          if (!$env:CODEXMETER_RELEASE_KEY_XML) { Write-Output 'No update signing key configured; publish portable packages only.'; exit 0 }
+          if (!$env:CODEXMETER_RELEASE_KEY_XML) { Write-Output '未配置更新签名密钥，仅发布便携包。'; exit 0 }
           $runtime = if ($env:BUILD_RUNTIME -eq 'Framework') { 'framework-x64' } else { 'dotnet10-x64' }
           $channel = if ($version.Contains('-')) { 'beta' } else { 'stable' }
           $name = "CodexMeter-Windows-$version-$runtime.zip"
           ./windows/scripts/sign-release.ps1 -Archive "windows/artifacts/$name" -Version $version -Channel $channel -Runtime $runtime -PackageUrl "https://github.com/$env:REPOSITORY/releases/download/$env:RELEASE_TAG/$name" -OutputDirectory windows/artifacts/feed
           Copy-Item -LiteralPath "windows/artifacts/feed/$channel-$runtime.json" -Destination windows/artifacts
           Copy-Item -LiteralPath windows/artifacts/feed/public-key.json -Destination "windows/artifacts/public-key-$runtime.json"
-      - uses: actions/upload-artifact@v7
+      - name: 上传便携包与校验文件
+        uses: actions/upload-artifact@v7
         with:
           name: CodexMeter-Windows-${{ matrix.runtime }}
           path: |
@@ -104,6 +111,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   release:
+    name: 发布 Windows 版本
     if: needs.plan.outputs.publish == 'true' && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/windows-v')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release'))
     needs: [plan, build]
     runs-on: windows-latest
@@ -114,16 +122,18 @@ jobs:
       group: windows-release-${{ github.repository }}-${{ needs.plan.outputs.tag }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
+      - name: 检出固定提交的源码
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/download-artifact@v8
+      - name: 下载已验证的构建产物
+        uses: actions/download-artifact@v8
         with:
           pattern: CodexMeter-Windows-*
           merge-multiple: true
           path: release-assets
-      - name: Publish verified Windows packages and optional signed feed
+      - name: 发布已校验的便携包与可选更新源
         shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}

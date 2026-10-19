@@ -1,4 +1,6 @@
-# CodexMeter Windows v0.7.0
+# CodexMeter for Windows · 使用与构建指南
+
+[项目中文首页](https://github.com/bsxucome/CodexMeter-for-Windows#readme) · [English overview](https://github.com/bsxucome/CodexMeter-for-Windows/blob/main/README.en.md)
 
 支持 Windows 11 x64。默认在主屏幕任务栏区域显示双环＋百分比：外环是剩余额度，蓝色内环是剩余时间。点击展开详情，拖动调整位置，右键可重置位置、设置或退出。详情按原项目采用 380 宽度、紧凑字号、分隔线、矢量图标、成对进度条和精确重置日期；Windows 11 上启用系统弹窗背景材质，不支持时使用纯色。系统托盘入口继续提供快捷操作。
 
@@ -12,8 +14,10 @@
 应用优先使用 npm 包内的原生 codex.exe，不执行 codex.ps1，也不修改 PowerShell 执行策略。无原生包时可使用 Node 和官方 codex.js 入口。普通任意 cmd/bat 脚本不受支持。
 
 两种发布：
-- `CodexMeter-Windows-0.7.0-dotnet10-x64.zip`：.NET 10 自包含发布，不需要单独安装 .NET；本环境未生成，已提供 CI 配置。
-- `CodexMeter-Windows-0.7.0-framework-x64.zip`：本次可用的兼容构建，使用 Windows 自带的 .NET Framework 4.8 或更新版本。
+- `CodexMeter-Windows-0.7.0-dotnet10-x64.zip`：推荐的 .NET 10 自包含包，不需要单独安装 .NET。
+- `CodexMeter-Windows-0.7.0-framework-x64.zip`：兼容包，使用 .NET Framework 4.8 或更新版本。
+
+两种便携包均已在 [0.7.0 发行页](https://github.com/bsxucome/CodexMeter-for-Windows/releases/tag/windows-v0.7.0) 提供，并附 SHA-256 校验文件。
 
 暂不支持 WSL CLI、ARM64。API Key / Bedrock 等账号可能不提供 ChatGPT 额度与 Token 活动；不存在的数据不会被显示为零。安装在桌面应用私有位置的 Codex 需要手动指定路径，不保证与独立 CLI 自动共享登录状态。完整功能对齐状态见 [PARITY.md](PARITY.md)，当前仍是分阶段移植。
 
@@ -27,7 +31,7 @@
 - 更新辅助进程、真实 WPF 新版启动、启动失败重启旧版，以及篡改包拒绝，均有独立进程夹具验证；不触碰正式安装和用户数据。
 - 新增 GitHub 浏览器授权建仓脚本、干净源码 ZIP、官方 SDK／GitHub CLI 校验下载脚本、上游提交采集脚本。双运行时 CI 在版本标签上发布经过哈希检查的 Release，可用自有密钥附加签名更新源。
 
-三轮计划的代码和发行工具已一起推进；真实 Explorer／多屏／系统投递、正常用户 DPAPI、完整上游固定提交复核和托管 .NET 10 构建仍待对应环境验证，见 [ACCEPTANCE.md](ACCEPTANCE.md)。公开仓库 `bsxucome/CodexMeter-Windows` 已完成首次 main 推送，托管构建结果尚未确认；更新源与可信公钥仍为空。
+双运行时托管构建和首个公开发行版已完成。真实 Explorer／多屏／系统投递、正常用户 DPAPI 与完整上游固定提交复核仍需对应环境验证，见 [ACCEPTANCE.md](ACCEPTANCE.md)。更新源与可信公钥仍为空；构建与发行证据见 [VERIFICATION.md](VERIFICATION.md)。
 
 ## v0.6.0 新增
 
@@ -38,7 +42,7 @@
 - 恢复前备份位于 `%LOCALAPPDATA%\CodexMeter\backups`。可管理当前／其他匿名本地分区，清除所选或全部账号历史；清除不删除身份盐，后续采集仍按设置继续。
 - 设置或托盘 → 关于与更新：支持 Stable／Beta、可配置清单地址与 RSA 公钥、手动检查／下载／安装，以及独立选择每日检查和空闲时自动安装。下载后及辅助进程安装前均校验签名、运行时、包哈希、文件清单与逐文件哈希；只接受新版本 Windows 包，禁止路径穿越、链接与未列出文件。
 - 安装到新的同级目录，保留旧版本与 `%LOCALAPPDATA%` 数据；辅助进程准备就绪后才退出旧版。新版需在三十秒内启动界面并持续存活两秒，否则终止本次启动的子进程并尝试重启旧版。正常工作后发生的崩溃不在这段启动回退窗口内。自动更新仅在没有打开面板或管理窗口时安装；需对应用同级目录有写入权限。
-- 尚无 Windows 发行仓库和证书，因此更新地址／可信公钥保持空白，自动选项默认关闭，也不会请求原项目的 macOS 发行包。发布、签名与 CI 接入见 [RELEASES.md](RELEASES.md)。本地提供的是未做 Authenticode 签名的兼容包。
+- Windows 公开发行仓库已建立；正式代码签名证书和更新签名密钥尚未配置，因此更新地址／可信公钥保持空白，自动选项默认关闭。发布、签名与 CI 接入见 [RELEASES.md](RELEASES.md)。当前提供未做 Authenticode 签名的便携包。
 
 远程实际投递、正常用户会话中的 DPAPI 和线上更新源仍需实机验收。v0.7.0 已补真实辅助进程交接及启动回退测试；HTTP、SQLite、RSA 与进程测试均隔离，不发送真实消息、不替换用户运行中的版本。
 

@@ -21,7 +21,7 @@ public static class ReleaseFixtureCli {
     static bool Has(string name) { return File.Exists(Path.Combine(root, name)); }
     static void Put(string name) { File.WriteAllText(Path.Combine(root, name), "fixture"); }
     static void Json(object value) { Console.WriteLine(new JavaScriptSerializer().Serialize(value)); }
-    static object Run(int id, string branch, string conclusion) { return new { databaseId = id, headSha = sha, headBranch = branch, status = "completed", conclusion = conclusion, url = "https://github.com/bsxucome/CodexMeter-Windows/actions/runs/" + id, workflowName = "Windows builds" }; }
+    static object Run(int id, string branch, string conclusion) { return new { databaseId = id, headSha = sha, headBranch = branch, status = "completed", conclusion = conclusion, url = "https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/" + id, workflowName = "Windows builds" }; }
     public static int Main(string[] args) {
         root = Environment.GetEnvironmentVariable("CODEXMETER_RELEASE_FIXTURE"); mode = Environment.GetEnvironmentVariable("CODEXMETER_RELEASE_MODE");
         if (root == null || !Has(".fixture") || File.ReadAllText(Path.Combine(root, ".fixture")) != "CodexMeter.ReleaseFixture.v1") return 99;
@@ -33,7 +33,7 @@ public static class ReleaseFixtureCli {
         File.AppendAllText(Path.Combine(root, "calls.log"), (git ? "git " : "gh ") + string.Join(" ", args) + "\n");
         string command = string.Join(" ", args.Take(2));
         if (git) {
-            if (command == "remote get-url") { Console.WriteLine(mode == "wrong-origin" ? "https://github.com/another/repo.git" : "https://github.com/bsxucome/CodexMeter-Windows.git"); return 0; }
+            if (command == "remote get-url") { Console.WriteLine(mode == "wrong-origin" ? "https://github.com/another/repo.git" : "https://github.com/bsxucome/CodexMeter-for-Windows.git"); return 0; }
             if (command == "branch --show-current") { Console.WriteLine("main"); return 0; }
             if (command == "status --porcelain") { if (mode == "dirty") Console.WriteLine(" M tracked.cs"); return 0; }
             if (command == "rev-parse HEAD") { Console.WriteLine(sha); return 0; }
@@ -61,7 +61,7 @@ public static class ReleaseFixtureCli {
             if (mode == "release-network") { Console.Error.WriteLine("Fixture network failure: https://user:PRIVATE_SENTINEL@example.test/ " + "gh" + "p_" + new string('x', 30)); return 1; }
             if (mode != "existing" && !Has("published")) { Console.Error.WriteLine("gh: Not Found (HTTP 404)"); return 1; }
             var assets = new[] { "framework-x64.zip", "framework-x64.zip.sha256", "dotnet10-x64.zip", "dotnet10-x64.zip.sha256" }.Where(x => mode != "missing-asset" || x != "dotnet10-x64.zip.sha256").Select(x => new { name = "CodexMeter-Windows-0.7.0-" + x, state = "uploaded", size = 128 }).ToArray();
-            Json(new { tag_name = tag, draft = false, html_url = "https://github.com/bsxucome/CodexMeter-Windows/releases/tag/" + tag, assets = assets }); return 0;
+            Json(new { tag_name = tag, draft = false, html_url = "https://github.com/bsxucome/CodexMeter-for-Windows/releases/tag/" + tag, assets = assets }); return 0;
         }
         if (command == "release create") {
             string notes = args[Array.IndexOf(args, "--notes-file") + 1];
@@ -113,12 +113,12 @@ public static class ReleaseFixtureCli {
         [IO.File]::WriteAllText($archive, 'fixture package bytes')
         [IO.File]::WriteAllText($archive + '.sha256', (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($archive))
     }
-    & (Join-Path $root 'windows/scripts/publish-release.ps1') -Repository bsxucome/CodexMeter-Windows -Tag windows-v0.7.0 -Directory $assets | Out-Null
+    & (Join-Path $root 'windows/scripts/publish-release.ps1') -Repository bsxucome/CodexMeter-for-Windows -Tag windows-v0.7.0 -Directory $assets | Out-Null
     if (!(Test-Path -LiteralPath (Join-Path $root 'release-created'))) { throw 'Release publisher did not reach the fixture CLI.' }
     Remove-Item -LiteralPath (Join-Path $root 'release-created')
     [IO.File]::AppendAllText((Join-Path $assets 'CodexMeter-Windows-0.7.0-dotnet10-x64.zip'), 'tampered')
     $refused = $false
-    try { & (Join-Path $root 'windows/scripts/publish-release.ps1') -Repository bsxucome/CodexMeter-Windows -Tag windows-v0.7.0 -Directory $assets | Out-Null } catch { if ($_.Exception.Message -notlike '*checksum mismatch*') { throw }; $refused = $true }
+    try { & (Join-Path $root 'windows/scripts/publish-release.ps1') -Repository bsxucome/CodexMeter-for-Windows -Tag windows-v0.7.0 -Directory $assets | Out-Null } catch { if ($_.Exception.Message -notlike '*checksum mismatch*') { throw }; $refused = $true }
     if (!$refused -or (Test-Path -LiteralPath (Join-Path $root 'release-created'))) { throw 'Tampered package reached publication.' }
     Write-Output 'PASS publisher passes prepared notes and four verified assets; tampering stops before publication'
 } finally {

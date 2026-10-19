@@ -1,0 +1,7 @@
+{
+  "repository": "bsxucome/CodexMeter-for-Windows",
+  "displayName": "CodexMeter for Windows",
+  "description": "CodexMeter for Windows｜Windows 任务栏 Codex 额度监控：双环百分比、重置倒计时、额度历史、Token 统计与可选提醒。默认中文，支持英文。",
+  "homepage": "https://github.com/bsxucome/CodexMeter-for-Windows#readme",
+  "topics": ["codex", "codexmeter", "windows", "windows-11", "taskbar", "system-tray", "quota-monitor", "token-usage", "wpf", "chinese", "english", "open-source"]
+}

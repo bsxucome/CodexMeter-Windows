@@ -1,5 +1,5 @@
 param(
-    [ValidatePattern('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')][string]$Repository = 'bsxucome/CodexMeter-Windows',
+    [ValidatePattern('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')][string]$Repository = 'bsxucome/CodexMeter-for-Windows',
     [ValidatePattern('^[a-fA-F0-9]{40}$')][string]$ExpectedCommit,
     [ValidatePattern('^(main|windows-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$')][string]$Reference = 'main',
     [switch]$WaitForCompletion

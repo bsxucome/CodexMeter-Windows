@@ -1,10 +1,10 @@
-param()
+param([switch]$SkipWait)
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
 $gitPath = (Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
 $gitArguments = @('-c', ('safe.directory=' + $projectRoot.Replace('\','/')), '-C', $projectRoot)
 $remote = & $gitPath @gitArguments remote get-url --push origin
-if ($LASTEXITCODE -ne 0 -or $remote -ne 'https://github.com/bsxucome/CodexMeter-Windows.git') { throw 'Origin does not match the authorized GitHub repository. Nothing was pushed.' }
+if ($LASTEXITCODE -ne 0 -or $remote -ne 'https://github.com/bsxucome/CodexMeter-for-Windows.git') { throw 'Origin does not match the authorized GitHub repository. Nothing was pushed.' }
 $branch = & $gitPath @gitArguments branch --show-current
 if ($LASTEXITCODE -ne 0 -or $branch -ne 'main') { throw 'Expected the main branch. Nothing was pushed.' }
 $commit = & $gitPath @gitArguments rev-parse HEAD
@@ -39,4 +39,8 @@ for ($attempt = 0; $attempt -lt 2; $attempt++) {
     if ($attempt -ne 0 -or !$handshakeFailure -or $permanentFailure) { break }
 }
 if ($pushResult -ne 0) { throw ('Git push failed with exit code ' + $pushResult + '. The Git error is displayed above. No successful push was confirmed; CI status was not collected.') }
-& (Join-Path $PSScriptRoot 'collect-ci-logs.ps1') -ExpectedCommit $commit -WaitForCompletion
+if ($SkipWait) {
+    Write-Output ('Push confirmed: ' + $commit + '. Follow CI at https://github.com/bsxucome/CodexMeter-for-Windows/actions')
+} else {
+    & (Join-Path $PSScriptRoot 'collect-ci-logs.ps1') -ExpectedCommit $commit -WaitForCompletion
+}

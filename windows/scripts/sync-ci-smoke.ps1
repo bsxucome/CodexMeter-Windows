@@ -24,7 +24,7 @@ public static class SyncFixtureCli {
         args = args.Skip(4).ToArray();
         string command = string.Join(" ", args);
         string sha = new string('a', 40);
-        if (command == "remote get-url --push origin") { Console.WriteLine(mode == "wrong-origin" ? "https://github.com/other/repo.git" : "https://github.com/bsxucome/CodexMeter-Windows.git"); return 0; }
+        if (command == "remote get-url --push origin") { Console.WriteLine(mode == "wrong-origin" ? "https://github.com/other/repo.git" : "https://github.com/bsxucome/CodexMeter-for-Windows.git"); return 0; }
         if (command == "branch --show-current") { Console.WriteLine(mode == "wrong-branch" ? "feature" : "main"); return 0; }
         if (command == "rev-parse HEAD") { Console.WriteLine(mode == "invalid-sha" ? "invalid" : sha); return 0; }
         int index = Array.IndexOf(args, "push");
@@ -35,8 +35,8 @@ public static class SyncFixtureCli {
         File.WriteAllText(countPath, count.ToString());
         bool fallback = args.Contains("http.sslBackend=openssl") && args.Contains("http.version=HTTP/1.1");
         if ((count == 1 && fallback) || (count == 2 && !fallback) || count > 2) return 95;
-        string handshake = "fatal: unable to access 'https://github.com/bsxucome/CodexMeter-Windows.git/': schannel: failed to receive handshake, SSL/TLS connection failed";
-        if (mode == "success" || (mode == "handshake-recovered" && count == 2)) { Console.Error.WriteLine("Everything up-to-date (fixture; no network)."); return 0; }
+        string handshake = "fatal: unable to access 'https://github.com/bsxucome/CodexMeter-for-Windows.git/': schannel: failed to receive handshake, SSL/TLS connection failed";
+        if (mode == "success" || mode == "success-no-wait" || (mode == "handshake-recovered" && count == 2)) { Console.Error.WriteLine("Everything up-to-date (fixture; no network)."); return 0; }
         if (count == 2 && mode == "unsupported-backend") { Console.Error.WriteLine("fatal: Unsupported SSL backend 'openssl'"); return 128; }
         if (mode == "auth") Console.Error.WriteLine("fatal: Authentication failed");
         else if (mode == "connection") Console.Error.WriteLine("fatal: Failed to connect to github.com port 443");
@@ -53,7 +53,7 @@ public static class SyncFixtureCli {
 '@
     Add-Type -TypeDefinition $mock -Language CSharp -OutputAssembly (Join-Path $bin 'git.exe') -OutputType ConsoleApplication
     [Environment]::SetEnvironmentVariable('PATH', $bin + ';' + $saved['PATH'], 'Process')
-    $scenarios = @('success', 'handshake-recovered', 'handshake-failed', 'unsupported-backend', 'auth', 'connection', 'certificate', 'rejected', 'wrong-origin', 'wrong-branch', 'invalid-sha')
+    $scenarios = @('success', 'success-no-wait', 'handshake-recovered', 'handshake-failed', 'unsupported-backend', 'auth', 'connection', 'certificate', 'rejected', 'wrong-origin', 'wrong-branch', 'invalid-sha')
     foreach ($scenario in $scenarios) {
         $root = Join-Path $fixture $scenario
         $scripts = Join-Path $root 'windows/scripts'
@@ -72,9 +72,10 @@ if ($ExpectedCommit -ne ('a' * 40) -or !$WaitForCompletion) { throw 'Collector m
         [Environment]::SetEnvironmentVariable('CODEXMETER_SYNC_MODE', $scenario, 'Process')
         $failure = $null
         # Suppress the deliberately noisy fixture's console stream, not errors.
-        try { & (Join-Path $scripts 'sync-ci-fix.ps1') 6>$null | Out-Null } catch { $failure = $_.Exception.Message }
-        $success = $scenario -in @('success', 'handshake-recovered')
-        if ($success -eq [bool]$failure -or $success -ne (Test-Path -LiteralPath (Join-Path $root 'collected'))) { throw ('Incorrect sync/CI result: ' + $scenario + ' ' + $failure) }
+        $skipWait = $scenario -eq 'success-no-wait'
+        try { & (Join-Path $scripts 'sync-ci-fix.ps1') -SkipWait:$skipWait 6>$null | Out-Null } catch { $failure = $_.Exception.Message }
+        $success = $scenario -in @('success', 'success-no-wait', 'handshake-recovered')
+        if ($success -eq [bool]$failure -or ($success -and !$skipWait) -ne (Test-Path -LiteralPath (Join-Path $root 'collected'))) { throw ('Incorrect sync/CI result: ' + $scenario + ' ' + $failure) }
         $countPath = Join-Path $root 'push-count'
         $count = if (Test-Path -LiteralPath $countPath) { [int][IO.File]::ReadAllText($countPath) } else { 0 }
         $expected = if ($scenario -in @('wrong-origin', 'wrong-branch', 'invalid-sha')) { 0 } elseif ($scenario -in @('handshake-recovered', 'handshake-failed', 'unsupported-backend')) { 2 } else { 1 }
