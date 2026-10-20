@@ -1,4 +1,14 @@
-# Verification — Windows v0.7.1
+# Verification — Windows v0.7.2
+
+## 0.7.2 云端路径修正（2026-10-20）
+
+正常用户的发布日志确认 0.7.1 已推送，远程标记解析为 f02d229728caf49517df904662e86133a70ac3ac；[main 运行 39439922002](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39439922002) 的 Framework 测试在 Program.Locator 创建 npm 目录时报 PathTooLongException，未确认新的公开 Release。GitHub 检出目录变长，旧夹具的最深目录达 248 个字符，触及 Framework 限制；此前本地较短目录的成功不能覆盖该场景。
+
+测试目录改用保留完整 GUID 位数的 22 字符安全编码和“中 ”前缀，继续覆盖中文／空格路径、npm 原生可执行文件、无效路径和 Node 回退。未禁用测试或修改系统长路径策略。增加 --locator-tests 与 locator-path-smoke.ps1：在与云端 Framework／DotNet 输出目录等长的独立夹具中运行实际查找逻辑，清理范围仅限带标记的本次 GUID 根目录；Framework Actions 加入该检查。
+
+Framework 构建通过 337 项测试。旧 0.7.1 二进制在 93／103 字符基目录均复现 PathTooLongException；新二进制在两个目录均通过。0.7.1 标签保留，修复版统一使用 0.7.2／0.7.2.0；云端发布状态仍需本次新提交和标签的实际结果确认。
+
+进一步将完整源码放入与 GitHub 检出根目录同为 52 字符的独立标记目录，串行执行 Framework 工作流的 17 个检查入口：源码校验、构建测试与打包、路径回归、签名清单夹具、归属／发布／同步／页面／Actions 编排、更新进程、主界面、圆环交互、功能、设置滚动、历史／外观以及发行界面检查全部通过；路径夹具在此环境中的基目录长 107 字符，仍通过原生 npm 查找与 Node 回退。未关闭用户实例。此为本地 Framework 等路径验证，不替代远程 Actions 或 .NET 10 构建结果。
 
 ## 0.7.1 发行准备（2026-10-20）
 

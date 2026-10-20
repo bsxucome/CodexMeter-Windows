@@ -24,6 +24,7 @@ namespace CodexMeter.Tests
                 if (args.Length == 2 && args[0] == "--release-script-fixture") { ReleaseScriptFixture(args[1]); return 0; }
                 if (args.Length == 2 && args[0] == "--interrupt-restore") { InterruptRestore(args[1]); return 0; }
                 if (args.Length == 1 && args[0] == "--transport-tests") { Transport().GetAwaiter().GetResult(); Console.WriteLine("PASS: " + passed + " transport scenarios"); return 0; }
+                if (args.Length == 1 && args[0] == "--locator-tests") { Locator(); Console.WriteLine("PASS: " + passed + " locator scenarios"); return 0; }
                 if (args.Length == 6 && args[0] == "--verify-release")
                 { SignedRelease.Verify(File.ReadAllText(args[1]), File.ReadAllText(args[2]), args[4], args[5]).VerifyArchive(args[3]); Console.WriteLine("PASS external signed release fixture"); return 0; }
                 Run().GetAwaiter().GetResult();
@@ -139,14 +140,19 @@ namespace CodexMeter.Tests
         }
         private static void Locator()
         {
-            var directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test-data", "CodexMeter 路径 " + Guid.NewGuid().ToString("N"));
+            // Preserve all GUID bits in 22 filesystem-safe characters. The npm
+            // tree must fit legacy Framework limits in long hosted checkout paths.
+            string id = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+            var directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test-data", "中 " + id);
             var package = Path.Combine(directory, "node_modules", "@openai", "codex");
             var native = Path.Combine(package, "node_modules", "@openai", "codex-win32-x64", "vendor", "x86_64-pc-windows-msvc", "bin", "codex.exe");
-            Directory.CreateDirectory(Path.GetDirectoryName(native)); Directory.CreateDirectory(Path.Combine(package, "bin"));
-            File.WriteAllText(native, "fixture"); File.WriteAllText(Path.Combine(package, "bin", "codex.js"), "fixture");
-            var shim = Path.Combine(directory, "codex.cmd"); File.WriteAllText(shim, "fixture");
             try
             {
+                Check(Path.GetDirectoryName(native).Length < 248 && native.Length < 260 && directory.Contains("中 "),
+                    "npm fixture retains Unicode and spaces within legacy path limits");
+                Directory.CreateDirectory(Path.GetDirectoryName(native)); Directory.CreateDirectory(Path.Combine(package, "bin"));
+                File.WriteAllText(native, "fixture"); File.WriteAllText(Path.Combine(package, "bin", "codex.js"), "fixture");
+                var shim = Path.Combine(directory, "codex.cmd"); File.WriteAllText(shim, "fixture");
                 var locator = new CliLocator();
                 Check(locator.Locate(shim).Executable == native, "npm shim resolves to native executable");
                 Check(locator.Locate(native).Executable == native, "explicit native path with spaces");
@@ -160,7 +166,7 @@ namespace CodexMeter.Tests
                 Check(fallback.Executable == nodePath && fallback.PrefixArguments.Length == 1 &&
                     fallback.PrefixArguments[0] == Path.Combine(package, "bin", "codex.js"), "npm fallback resolves Node without NODE_EXE");
             }
-            finally { DeleteTestDirectory(directory); }
+            finally { if (Directory.Exists(directory)) DeleteTestDirectory(directory); }
         }
         private static void DeleteTestDirectory(string directory)
         {

@@ -11,6 +11,7 @@ This workspace contains an independent Windows addition for raycalrui/CodexMeter
 - Read stdout and stderr concurrently with bounded memory. Own the child job and dispose it at exit.
 - v0.3 adds opt-out local SQLite quota/token history under LocalApplicationData/CodexMeter. Partition accounts with a locally salted hash; never persist emails. Anonymous sessions must not merge across explicit account boundaries. Preview must never open the production database.
 - Run windows/scripts/build.ps1 (Auto selects an available .NET 10 SDK, otherwise Framework); tests must pass before packaging.
+- Keep the npm locator fixture below legacy Framework path limits without dropping Unicode/space or nested npm lookup coverage. locator-path-smoke.ps1 uses marked GUID fixtures to exercise hosted checkout path lengths; run it after the Framework build. Do not change OS long-path policy or move existing published release tags to fix CI.
 - Use --smoke / --smoke --dark only for local preview artifacts; preview must not launch Codex or persist preferences.
 - Update README, UPSTREAM and verification notes when public behavior or validation status changes.
 

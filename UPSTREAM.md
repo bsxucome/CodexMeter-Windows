@@ -6,6 +6,8 @@
 
 ## Provenance records
 
+Windows 0.7.2 CI follow-up, 2026-10-20: the normal-user log for main run 39439922002 identifies Framework PathTooLongException in the npm locator fixture after the repository rename. Shorten the fixture identifier without removing GUID entropy, Unicode/spaces or lookup coverage, and add equal-length hosted-path regression checks. Retain the existing 0.7.1 tag; the correction uses 0.7.2. This changes test infrastructure and release metadata, not upstream parity or runtime account handling.
+
 Windows 0.7.1 release preparation, 2026-10-20: product, SDK and manifest versions advance together for the Settings scrolling and advanced appearance corrections. The existing tag-triggered Actions pipeline is used to build/test/package both Windows runtimes and publish the Release. Local preparation does not confirm remote publication; upstream parity and production signing status are unchanged.
 
 Advanced appearance follow-up, 2026-10-20: the Windows appearance editor now shares the 380-DIP Settings shell, with a fixed demo preview and footer, grouped controls and a hidden viewport scrollbar. Wheel and keyboard scrolling remain available. This changes Windows presentation only; appearance bounds, JSON format and account isolation are unchanged.

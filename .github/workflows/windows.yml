@@ -68,6 +68,7 @@ jobs:
         if: matrix.runtime == 'Framework'
         shell: powershell
         run: |
+          ./windows/scripts/locator-path-smoke.ps1
           ./windows/scripts/publishing-smoke.ps1
           ./windows/scripts/publish-ownership-smoke.ps1
           ./windows/scripts/publish-flow-smoke.ps1
