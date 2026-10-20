@@ -1,4 +1,14 @@
-# Verification — Windows v0.7.0
+# Verification — Windows v0.7.1
+
+## 0.7.1 发行准备（2026-10-20）
+
+本轮发布设置页滚轮与高级外观布局修正，将 ProductVersion.Current／Assembly、SDK Version 与应用清单统一为 0.7.1／0.7.1.0。发行说明见 releases/0.7.1.md；沿用现有 windows-v* 标签触发的双运行时构建／测试／打包／Release 工作流，不将普通 main 推送改为自动发布。
+
+本地 Framework 0.7.1 构建通过 336 项测试；设置列表及高级外观四种主题／语言组合的滚轮、PageUp、固定预览／底栏与应用检查通过。PowerShell 语法／UTF-8 检查和实际 Actions 版本读取通过。Actions 发布夹具验证只读事件、版本一致性、已有发行保护、标签冲突、校验文件、包篡改与同次发布确认。包验证和截图脚本改为从 ProductVersion 读取版本，避免误查旧 0.7.0 产物。
+
+release-scripts-smoke.ps1 的 11 组隔离编排场景及发行说明／四项附件传递、篡改拒绝检查通过；这些是模拟传输夹具，不能作为远程发行证据。capture-release.ps1 串行生成主面板、设置、远程提醒、数据、关于、历史和高级外观的 14 张浅深色演示截图，输出目录正确使用 preview-0.7.1。
+
+新产物使用独立目录 windows/artifacts/release-0.7.1/，未覆盖或停止用户正在运行的 appearance-fix 实例。本地无 .NET 10 SDK，该运行时需由 Actions 构建。当前 GitHub 443 连接仍失败，尚未确认远程标签、Actions 执行或 0.7.1 Release；本地准备不代表已经发布。生产代码签名、签名更新源与真实 Explorer 验收限制继续保留。
 
 ## 高级外观布局统一（2026-10-20）
 

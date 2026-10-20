@@ -1,5 +1,9 @@
 # Windows 发行与更新接入
 
+## 0.7.1 发布准备
+
+0.7.1 包含设置页滚轮修复、高级外观紧凑布局与滚动条隐藏；具体变化见 [0.7.1 发行说明](releases/0.7.1.md)。源码、SDK 与清单版本已统一。推送 `windows-v0.7.1` 标签会由现有 Actions 构建、测试并发布两个运行时的便携包和 SHA-256 文件；普通 main 推送仍只构建。只有 Actions 成功且 Release 附件齐全后，才视为已发布。
+
 ## 项目页面与仓库改名
 
 项目展示名称为 **CodexMeter for Windows**，目标公开地址为 `bsxucome/CodexMeter-for-Windows`。首页默认中文，通过 `English` 入口切换英文介绍。GitHub 简介、首页链接和主题标签保存在 `.github/repository-profile.json`。

@@ -1,7 +1,10 @@
 param([string]$AppPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts/CodexMeter-framework-x64/CodexMeter.exe'))
 $ErrorActionPreference = 'Stop'
 $appDirectory = Split-Path ([IO.Path]::GetFullPath($AppPath)) -Parent
-$destination = Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts/preview-0.7.0'
+$source = [IO.File]::ReadAllText((Join-Path (Split-Path $PSScriptRoot -Parent) 'CodexMeter.Core/ProductVersion.cs'))
+$releaseVersion = [regex]::Match($source, 'Current = "([^"]+)"').Groups[1].Value
+if (!$releaseVersion) { throw 'Missing product version.' }
+$destination = Join-Path (Split-Path $PSScriptRoot -Parent) "artifacts/preview-$releaseVersion"
 [IO.Directory]::CreateDirectory($destination) | Out-Null
 foreach ($mode in @('panel','settings','remote','data','about','history','appearance')) {
     foreach ($theme in @('light','dark')) {

@@ -1,5 +1,11 @@
-param([string]$Archive = (Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts/CodexMeter-Windows-0.7.0-framework-x64.zip'))
+param([string]$Archive)
 $ErrorActionPreference = 'Stop'
+$windowsRoot = Split-Path $PSScriptRoot -Parent
+$source = [IO.File]::ReadAllText((Join-Path $windowsRoot 'CodexMeter.Core/ProductVersion.cs'))
+$releaseVersion = [regex]::Match($source, 'Current = "([^"]+)"').Groups[1].Value
+$assemblyVersion = [regex]::Match($source, 'Assembly = "([^"]+)"').Groups[1].Value
+if (!$releaseVersion -or !$assemblyVersion) { throw 'Missing product version.' }
+if (!$Archive) { $Archive = Join-Path $windowsRoot "artifacts/CodexMeter-Windows-$releaseVersion-framework-x64.zip" }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archivePath = (Resolve-Path -LiteralPath $Archive).Path
 $artifactRoot = [IO.Path]::GetFullPath((Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts'))
@@ -21,7 +27,7 @@ try {
 [IO.Compression.ZipFile]::ExtractToDirectory($archivePath, $directory)
 $exe = Join-Path $directory 'CodexMeter.exe'
 $version = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe).FileVersion
-if ($version -ne '0.7.0.0') { throw 'Unexpected application version.' }
+if ($version -ne $assemblyVersion) { throw 'Unexpected application version.' }
 $owned = Start-Process -FilePath $exe -ArgumentList '--smoke','--settings' -WindowStyle Hidden -PassThru
 try {
     if (!$owned.WaitForExit(15000) -or $owned.ExitCode -ne 0) { throw 'Extracted portable preview failed.' }
