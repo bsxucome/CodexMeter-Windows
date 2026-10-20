@@ -86,6 +86,7 @@ namespace CodexMeter.Windows
             // Hidden keeps wheel, touchpad and keyboard scrolling without reserving a scrollbar gutter.
             scroller = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, ClipToBounds = true };
+            AutomationProperties.SetAutomationId(scroller, "Detail.Scroll");
             Grid.SetRow(scroller, 1); layout.Children.Add(scroller);
             if (state.Error != null || state.IsStale)
             {

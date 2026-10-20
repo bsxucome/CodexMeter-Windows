@@ -1,5 +1,13 @@
 # Verification — Windows v0.7.3
 
+## 0.7.3 面板导航与短窗口回归（2026-10-20）
+
+正常用户日志确认 [main 运行 39448546410](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39448546410) 的实际签名入口、延迟 WPF 就绪检查、历史与 Token 检查通过，但在关闭历史窗口后查找“每周额度历史”失败。本地诊断复现窗口查询返回 HWND=0 的同名标题 TextBlock，随后对象失效且无子控件；Owned-Window 此前只按进程和名称匹配。查询现在额外限定 ControlType.Window，真实 WPF 夹具先放置同名文字，再延迟创建窗口，确保必须等待真正窗口出现。详情始终打开和内容位于可见区域的假设也被移除，以适应生产失焦关闭和不同桌面可用高度。
+
+advanced-smoke.ps1 现在启用生产失焦行为，在需要详情时通过本次预览的圆环 InvokePattern 主动打开，并使用真实 ScrollPattern 逐页查找可见内容。保存设置后再次打开详情；隐藏小图的反向检查也覆盖所有滚动页。Detail.Scroll 仅增加自动化定位标识，不修改布局和账号逻辑。短窗口真实 WPF 夹具验证隐藏滚动条下超出视口的控件可达、缺失控件不会被误判为存在；可见性同时检查实际视口交集，避免 WPF IsOffscreen 对裁剪内容报告不准确。夹具仅清理自己的进程，并等待其退出后移除文件。
+
+本地 Framework 0.7.3 重新编译通过；真实 WPF 延迟控件、缺失控件、同名标题／延迟窗口和短视口逐页检查通过。完整 advanced-smoke.ps1 通过历史／Token、详情主动打开、外观预设／滑块应用、实际任务栏尺寸更新和每周小图开关检查，重新获取的详情 HWND 非零。337 项核心测试已在本版前次构建及云端运行通过，本次核心逻辑未修改。当前用户的 appearance-fix 实例持续运行。尚未创建 0.7.3 标签，需修复提交的 main CI 成功后再触发标签构建并确认四项 Release 附件。
+
 ## 0.7.3 标签发布修正（2026-10-20）
 
 正常用户日志确认 c3f6beb 的 [main 运行 39445082151](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39445082151) 成功；随后 [windows-v0.7.2 运行 39445756687](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39445756687) 失败，未发布 Release。DotNet 已完成编译，但仅发版时执行的签名步骤将含中文的内联 run 写成无 BOM 文件，Windows PowerShell 按 ANSI 解码后产生字符串终止符错误。Framework 在高级界面测试查找 QuotaRange 时超过原四秒等待期限；相同提交在 main 与本地通过，现象符合自动化就绪时序问题。

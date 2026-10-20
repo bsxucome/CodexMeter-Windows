@@ -13,7 +13,7 @@ function Select-Choice($Root, [string]$Id, [string]$Value) {
     try { $expansion.Collapse() } catch [System.Windows.Automation.ElementNotAvailableException] { }
     Start-Sleep -Milliseconds 150
 }
-$owned = Start-Process -FilePath $AppPath -ArgumentList '--preview','--dark','--history' -WindowStyle Hidden -PassThru
+$owned = Start-Process -FilePath $AppPath -ArgumentList '--preview','--dark','--history','--interaction-check' -WindowStyle Hidden -PassThru
 try {
     if (!$owned.WaitForInputIdle(15000)) { throw 'Advanced preview did not become input-idle before its readiness deadline.' }
     $history = Owned-Window $owned.Id 'CodexMeter · 历史记录'
@@ -37,8 +37,11 @@ try {
     $null = Find-Element $history 'ExhaustionEstimate' -ById
     Write-Output 'PASS independent token grouping and eligible exhaustion estimate'
     $history.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
+    $meter = Owned-Window $owned.Id 'CodexMeter 任务栏额度'
+    $meter.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
     $details = Owned-Window $owned.Id 'CodexMeter'
-    $null = Find-Element $details '每周额度历史'
+    Write-Output ('Details reopened: HWND=' + $details.Current.NativeWindowHandle + '; offscreen=' + $details.Current.IsOffscreen)
+    if (!(Find-ScrolledElement $details '每周额度历史' 'Detail.Scroll')) { throw 'Weekly chart was not reachable in the visible popup.' }
     $widthBefore = (Owned-Window $owned.Id 'CodexMeter 任务栏额度').Current.BoundingRectangle.Width
     Press $details '设置'
     $settings = Owned-Window $owned.Id 'CodexMeter · 设置'
@@ -49,19 +52,34 @@ try {
     $rangeValue = $ring.GetCurrentPattern([System.Windows.Automation.RangeValuePattern]::Pattern)
     if ($rangeValue.Current.Value -ne 22) { throw 'Bold appearance preset did not set ring size.' }
     $rangeValue.SetValue(24)
-    Press $appearance '低额度'
+    $low = Find-ScrolledElement $appearance '低额度' 'Compact.Scroll'
+    if (!$low) { throw 'Appearance scenarios are not reachable.' }
+    $low.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
     $null = Find-Element $appearance '12%'
     Press $appearance '应用到设置'
-    (Find-Element $settings '每周额度小图').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
+    $weekly = Find-ScrolledElement $settings '每周额度小图' 'Compact.Scroll'
+    if (!$weekly) { throw 'Weekly chart preference is not reachable.' }
+    $weekly.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
     Press $settings '保存设置'
     Start-Sleep -Milliseconds 250
+    $meter = Owned-Window $owned.Id 'CodexMeter 任务栏额度'
+    $meter.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    $details = Owned-Window $owned.Id 'CodexMeter'
     $widthAfter = (Owned-Window $owned.Id 'CodexMeter 任务栏额度').Current.BoundingRectangle.Width
     if ($widthAfter -le $widthBefore) { throw 'Saved appearance did not resize the actual indicator.' }
-    $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, '每周额度历史')
-    if ($details.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)) { throw 'Weekly chart visibility did not update.' }
+    if (Find-ScrolledElement $details '每周额度历史' 'Detail.Scroll') { throw 'Weekly chart visibility did not update.' }
     Press $details '退出'
     if (!$owned.WaitForExit(5000)) { throw 'Advanced preview failed to quit.' }
     Write-Output 'PASS isolated appearance presets/sliders apply to the indicator; weekly chart toggles'
+} catch {
+    if ($details) {
+        try {
+            $items = $details.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+            Write-Output ('Preview details diagnostics: HWND=' + $details.Current.NativeWindowHandle + '; offscreen=' + $details.Current.IsOffscreen + '; children=' + $items.Count)
+            foreach ($item in @($items | Select-Object -First 60)) { Write-Output ('UIA id=' + $item.Current.AutomationId + '; name=' + $item.Current.Name + '; type=' + $item.Current.ControlType.ProgrammaticName) }
+        } catch { Write-Output 'Preview details provider is no longer available.' }
+    }
+    throw
 } finally {
     $owned.Refresh()
     if (!$owned.HasExited) { $owned.Kill() }
