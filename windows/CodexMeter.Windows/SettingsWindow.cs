@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using CodexMeter.Core;
 
 namespace CodexMeter.Windows
@@ -22,6 +24,8 @@ namespace CodexMeter.Windows
             Action remoteSettings = null, Action dataSettings = null, Action about = null) : base("设置", current.Theme, preview)
         {
             var p = Theme; var root = Body; var actions = Actions;
+            Viewport.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            Viewport.Padding = new Thickness(0);
             Section("连接与账号");
             root.Children.Add(p.Label("Codex CLI 路径", 13, p.Text));
             var path = new TextBox { Text = current.CliPath, Margin = new Thickness(0, 8, 0, 8), Padding = new Thickness(8),
@@ -102,6 +106,8 @@ namespace CodexMeter.Windows
             var sections = new ListBox { Background = p.Surface, Foreground = p.Text, BorderBrush = p.Line,
                 Margin = new Thickness(0, 8, 0, 8), Height = 130 };
             System.Windows.Automation.AutomationProperties.SetAutomationId(sections, "SectionOrder");
+            ScrollViewer.SetVerticalScrollBarVisibility(sections, ScrollBarVisibility.Hidden);
+            sections.PreviewMouseWheel += ForwardListWheel;
             foreach (var key in Settings.ValidSections(current.SectionOrder))
                 sections.Items.Add(new ListBoxItem { Content = L.T(SectionTitle(key)), Tag = key });
             root.Children.Add(sections);
@@ -111,6 +117,9 @@ namespace CodexMeter.Windows
             root.Children.Add(p.Label("额度窗口显示与顺序", 13, p.Text));
             var rows = new ListBox { Background = p.Surface, Foreground = p.Text, BorderBrush = p.Line,
                 Margin = new Thickness(0, 8, 0, 8), MaxHeight = 170, MinHeight = 46 };
+            System.Windows.Automation.AutomationProperties.SetAutomationId(rows, "QuotaWindowOrder");
+            ScrollViewer.SetVerticalScrollBarVisibility(rows, ScrollBarVisibility.Hidden);
+            rows.PreviewMouseWheel += ForwardListWheel;
             var ordered = (current.WindowOrder ?? new string[0]).Concat(windows.Select(w => w.Id)).Concat(current.HiddenWindows ?? new string[0]).Distinct();
             foreach (var id in ordered)
             {
@@ -218,6 +227,29 @@ namespace CodexMeter.Windows
             int index = rows.SelectedIndex;
             if (index < 0 || index + direction < 0 || index + direction >= rows.Items.Count) return;
             object selected = rows.Items[index]; rows.Items.RemoveAt(index); rows.Items.Insert(index + direction, selected); rows.SelectedItem = selected;
+        }
+        private void ForwardListWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (e.Handled || e.Delta == 0) return;
+            var inner = FindScrollViewer((DependencyObject)sender);
+            // Let overflowing lists scroll normally. At either boundary (or
+            // when all items fit), avoid trapping the wheel inside the list.
+            if (inner != null && inner.ScrollableHeight > 0 &&
+                (e.Delta > 0 ? inner.VerticalOffset > 0.01 : inner.VerticalOffset < inner.ScrollableHeight - 0.01)) return;
+            e.Handled = true;
+            Viewport.RaiseEvent(new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta) {
+                RoutedEvent = Mouse.MouseWheelEvent, Source = Viewport
+            });
+        }
+        private static ScrollViewer FindScrollViewer(DependencyObject parent)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                var result = child as ScrollViewer ?? FindScrollViewer(child);
+                if (result != null) return result;
+            }
+            return null;
         }
     }
 }

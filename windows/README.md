@@ -2,6 +2,8 @@
 
 [项目中文首页](https://github.com/bsxucome/CodexMeter-for-Windows#readme) · [English overview](https://github.com/bsxucome/CodexMeter-for-Windows/blob/main/README.en.md)
 
+设置页已隐藏右侧滚动条并保留滚动功能。“弹窗区域顺序”和“额度窗口显示与顺序”列表内可使用滚轮；内容无需内部滚动或已到边界时，滚轮继续滚动外层设置页。列表选择、排序操作与键盘翻页保持可用。
+
 支持 Windows 11 x64。默认在主屏幕任务栏区域显示双环＋百分比：外环是剩余额度，蓝色内环是剩余时间。点击展开详情，拖动调整位置，右键可重置位置、设置或退出。详情按原项目采用 380 宽度、紧凑字号、分隔线、矢量图标、成对进度条和精确重置日期；Windows 11 上启用系统弹窗背景材质，不支持时使用纯色。系统托盘入口继续提供快捷操作。
 
 ## 运行

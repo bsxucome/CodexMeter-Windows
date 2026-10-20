@@ -6,6 +6,8 @@
 
 ## Provenance records
 
+Settings scrolling follow-up, 2026-10-20: the Windows settings viewport and its ordering lists hide their vertical scrollbars without disabling scrolling. Nested list wheel events reach the page when the list fits or reaches its boundary; overflowing lists retain internal scrolling. This is a Windows usability correction; other management windows keep their scrollbars. Routed-input preview checks reproduce the old trap and exercise both themes without touching production settings or accounts.
+
 - Repository: https://github.com/raycalrui/CodexMeter.git
 - Reference: main, inspected through GitHub/raw pages on 2026-10-18.
 - Source license: MIT, copyright (c) 2026 Raycal. Preserved in LICENSE.

@@ -79,6 +79,7 @@ jobs:
           ./windows/scripts/ui-smoke.ps1
           ./windows/scripts/indicator-smoke.ps1
           ./windows/scripts/features-smoke.ps1
+          ./windows/scripts/settings-scroll-smoke.ps1
           ./windows/scripts/advanced-smoke.ps1
           ./windows/scripts/release-smoke.ps1
       - name: 签署更新清单（需配置签名密钥）

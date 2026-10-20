@@ -34,6 +34,8 @@ An independent Windows implementation inspired by [raycalrui/CodexMeter](https:/
 | **History management** | Keep account histories separate, choose retention periods, export CSV, and back up, restore, or delete records. |
 | **Everyday controls** | Use the system tray, login startup, light/dark themes, and Simplified Chinese, Traditional Chinese, or English. |
 
+Settings hides its vertical scrollbars while retaining wheel and keyboard scrolling. Ordering lists pass scrolling to the page when their content fits or reaches a boundary; longer lists retain internal scrolling.
+
 Credits, reset opportunities, and Token activity depend on account and API availability. Missing data is unavailable or omitted rather than displayed as zero. Remote reminders require explicit configuration and opt-in.
 
 ## Download and get started
