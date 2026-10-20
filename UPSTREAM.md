@@ -6,6 +6,8 @@
 
 ## Provenance records
 
+Windows 0.7.3 release follow-up, 2026-10-20: main run 39445082151 passed, while tag run 39445756687 exposed a release-only Windows PowerShell ANSI decoding failure and a QuotaRange UIA timeout. Move signing code to a BOM-encoded script, validate ASCII workflow code and exercise the actual signing invocation with absent/test-only keys. Add bounded UI readiness with a delayed real-WPF fixture. Keep both earlier tags; use 0.7.3 for the correction. No upstream parity or production trust configuration changes.
+
 Windows 0.7.2 CI follow-up, 2026-10-20: the normal-user log for main run 39439922002 identifies Framework PathTooLongException in the npm locator fixture after the repository rename. Shorten the fixture identifier without removing GUID entropy, Unicode/spaces or lookup coverage, and add equal-length hosted-path regression checks. Retain the existing 0.7.1 tag; the correction uses 0.7.2. This changes test infrastructure and release metadata, not upstream parity or runtime account handling.
 
 Windows 0.7.1 release preparation, 2026-10-20: product, SDK and manifest versions advance together for the Settings scrolling and advanced appearance corrections. The existing tag-triggered Actions pipeline is used to build/test/package both Windows runtimes and publish the Release. Local preparation does not confirm remote publication; upstream parity and production signing status are unchanged.

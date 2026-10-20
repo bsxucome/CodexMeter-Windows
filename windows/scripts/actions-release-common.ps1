@@ -19,6 +19,17 @@ function Invoke-ActionsGithub {
         throw [InvalidOperationException]::new("GitHub $Method request failed (HTTP $status).")
     }
 }
+function Get-ActionsPowerShellSteps([string]$WorkflowPath) {
+    $yaml = [IO.File]::ReadAllText($WorkflowPath)
+    foreach ($step in [regex]::Split($yaml, '(?m)(?=^      - )')) {
+        if ($step -notmatch '(?m)^        shell: powershell\s*$') { continue }
+        $run = [regex]::Match($step, '(?m)^        run: ([^\r\n]*)(?<body>(?:\r?\n(?:          [^\r\n]*|[ \t]*))*)')
+        if (!$run.Success) { throw 'PowerShell workflow step has no supported run block.' }
+        $text = $run.Groups[1].Value
+        if ($text -match '^\|[-+]?$') { $text = [regex]::Replace($run.Groups['body'].Value, '(?m)^          ', '').Trim("`r", "`n") }
+        [pscustomobject]@{ Text = $text }
+    }
+}
 function Read-ActionsProductVersion([string]$ProjectRoot) {
     $source = [IO.File]::ReadAllText((Join-Path $ProjectRoot 'windows/CodexMeter.Core/ProductVersion.cs'))
     $version = [regex]::Match($source, 'Current = "([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)"').Groups[1].Value

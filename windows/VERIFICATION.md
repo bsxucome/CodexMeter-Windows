@@ -1,4 +1,12 @@
-# Verification — Windows v0.7.2
+# Verification — Windows v0.7.3
+
+## 0.7.3 标签发布修正（2026-10-20）
+
+正常用户日志确认 c3f6beb 的 [main 运行 39445082151](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39445082151) 成功；随后 [windows-v0.7.2 运行 39445756687](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39445756687) 失败，未发布 Release。DotNet 已完成编译，但仅发版时执行的签名步骤将含中文的内联 run 写成无 BOM 文件，Windows PowerShell 按 ANSI 解码后产生字符串终止符错误。Framework 在高级界面测试查找 QuotaRange 时超过原四秒等待期限；相同提交在 main 与本地通过，现象符合自动化就绪时序问题。
+
+签名步骤移至带 UTF-8 BOM 的 sign-actions-release.ps1，工作流内联调用保持 ASCII。validate-source.ps1 新增工作流 PowerShell 片段解析／语法与 ASCII 检查。actions-signing-smoke.ps1 从实际工作流提取调用，以与 Actions 相同的错误策略和无 BOM 包装脚本在 Windows PowerShell 执行；两种运行时的无密钥分支、稳定版／测试版的临时 RSA 签名及验签、无效标签／运行时／仓库拒绝全部通过，并复现旧 ANSI 解码错误。临时测试密钥不用于发行，不联网、不生成生产信任配置。
+
+高级检查先等待进程输入空闲，统一使用十五秒就绪期限并按 HWND 重新获取顶层 UIA 对象，保留全部功能断言。真实 WPF 夹具在收到本地握手后延迟六秒创建 QuotaRange，新等待通过；永不创建的控件仍在期限内失败。advanced-smoke.ps1 的历史、Token、外观预设／应用与可见性流程通过。Framework 0.7.3 构建通过 337 项测试，既有 Actions 发布保护夹具通过；0.7.1／0.7.2 标签保留，新修复使用 0.7.3。新的托管构建与 Release 仍待实际结果确认。
 
 ## 0.7.2 云端路径修正（2026-10-20）
 

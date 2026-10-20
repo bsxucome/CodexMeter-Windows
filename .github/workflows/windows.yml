@@ -76,11 +76,13 @@ jobs:
           ./windows/scripts/sync-ci-smoke.ps1
           ./windows/scripts/github-page-smoke.ps1
           ./windows/scripts/actions-release-smoke.ps1
+          ./windows/scripts/actions-signing-smoke.ps1
           ./windows/scripts/update-process-smoke.ps1
           ./windows/scripts/ui-smoke.ps1
           ./windows/scripts/indicator-smoke.ps1
           ./windows/scripts/features-smoke.ps1
           ./windows/scripts/settings-scroll-smoke.ps1
+          ./windows/scripts/ui-readiness-smoke.ps1
           ./windows/scripts/advanced-smoke.ps1
           ./windows/scripts/release-smoke.ps1
       - name: 签署更新清单（需配置签名密钥）
@@ -91,17 +93,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.plan.outputs.tag }}
           BUILD_RUNTIME: ${{ matrix.runtime }}
-        run: |
-          $version = $env:RELEASE_TAG.Substring(9)
-          $source = [IO.File]::ReadAllText('windows/CodexMeter.Core/ProductVersion.cs')
-          if ([regex]::Match($source, 'Current = "([^"]+)"').Groups[1].Value -ne $version) { throw 'Release tag does not match product version.' }
-          if (!$env:CODEXMETER_RELEASE_KEY_XML) { Write-Output '未配置更新签名密钥，仅发布便携包。'; exit 0 }
-          $runtime = if ($env:BUILD_RUNTIME -eq 'Framework') { 'framework-x64' } else { 'dotnet10-x64' }
-          $channel = if ($version.Contains('-')) { 'beta' } else { 'stable' }
-          $name = "CodexMeter-Windows-$version-$runtime.zip"
-          ./windows/scripts/sign-release.ps1 -Archive "windows/artifacts/$name" -Version $version -Channel $channel -Runtime $runtime -PackageUrl "https://github.com/$env:REPOSITORY/releases/download/$env:RELEASE_TAG/$name" -OutputDirectory windows/artifacts/feed
-          Copy-Item -LiteralPath "windows/artifacts/feed/$channel-$runtime.json" -Destination windows/artifacts
-          Copy-Item -LiteralPath windows/artifacts/feed/public-key.json -Destination "windows/artifacts/public-key-$runtime.json"
+        run: ./windows/scripts/sign-actions-release.ps1
       - name: 上传便携包与校验文件
         uses: actions/upload-artifact@v7
         with:

@@ -2,33 +2,7 @@
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
-function Owned-Window([int]$OwnerId, [string]$Name) {
-    $condition = New-Object System.Windows.Automation.AndCondition(
-        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $OwnerId)),
-        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Name)))
-    for ($attempt = 0; $attempt -lt 60; $attempt++) {
-        $result = [System.Windows.Automation.AutomationElement]::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Children, $condition)
-        if ($result) { return $result }
-        $processCondition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $OwnerId)
-        $parents = [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $processCondition)
-        foreach ($parent in $parents) {
-            $result = $parent.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-            if ($result) { return $result }
-        }
-        Start-Sleep -Milliseconds 100
-    }
-    throw "Owned window missing: $Name"
-}
-function Find-Element($Root, [string]$Value, [switch]$ById) {
-    $property = if ($ById) { [System.Windows.Automation.AutomationElement]::AutomationIdProperty } else { [System.Windows.Automation.AutomationElement]::NameProperty }
-    $condition = New-Object System.Windows.Automation.PropertyCondition($property, $Value)
-    for ($attempt = 0; $attempt -lt 40; $attempt++) {
-        $result = $Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-        if ($result) { return $result }
-        Start-Sleep -Milliseconds 100
-    }
-    throw "Owned element missing: $Value"
-}
+. (Join-Path $PSScriptRoot 'ui-automation-common.ps1')
 function Press($Root, [string]$Value) { (Find-Element $Root $Value).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
 function Select-Choice($Root, [string]$Id, [string]$Value) {
     $combo = Find-Element $Root $Id -ById
@@ -41,6 +15,7 @@ function Select-Choice($Root, [string]$Id, [string]$Value) {
 }
 $owned = Start-Process -FilePath $AppPath -ArgumentList '--preview','--dark','--history' -WindowStyle Hidden -PassThru
 try {
+    if (!$owned.WaitForInputIdle(15000)) { throw 'Advanced preview did not become input-idle before its readiness deadline.' }
     $history = Owned-Window $owned.Id 'CodexMeter · 历史记录'
     Select-Choice $history 'QuotaRange' '日历周'
     if ((Find-Element $history '下一期').Current.IsEnabled) { throw 'Calendar navigation crossed into a future week.' }

@@ -11,6 +11,13 @@ foreach ($script in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'windows/
         if ($bytes.Length -lt 3 -or $bytes[0] -ne 239 -or $bytes[1] -ne 187 -or $bytes[2] -ne 191) { $failures += $script.Name + ': Chinese PowerShell scripts require a UTF-8 BOM.' }
     }
 }
+. (Join-Path $PSScriptRoot 'actions-release-common.ps1')
+foreach ($step in Get-ActionsPowerShellSteps (Join-Path $projectRoot '.github/workflows/windows.yml')) {
+    if ($step.Text -match '[^\x00-\x7f]') { $failures += 'Windows PowerShell inline workflow code must be ASCII; move localized text to a UTF-8 BOM script.' }
+    $tokens = $null; $errors = $null
+    $null = [Management.Automation.Language.Parser]::ParseInput($step.Text, [ref]$tokens, [ref]$errors)
+    foreach ($error in $errors) { $failures += 'Workflow PowerShell: ' + $error.Message }
+}
 if ($failures.Count) { throw ($failures -join "`n") }
 Write-Output 'PASS PowerShell syntax and Windows PowerShell UTF-8 compatibility'
 Push-Location -LiteralPath $projectRoot

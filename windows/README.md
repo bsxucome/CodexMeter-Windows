@@ -120,6 +120,8 @@
 
 Framework 构建后可运行 `windows/scripts/locator-path-smoke.ps1`，验证 npm 查找夹具在与 GitHub 检出目录等长的路径下工作；它保留中文／空格路径和 Node 回退覆盖，不修改系统长路径策略。
 
+Actions 的 Windows PowerShell 内联代码保持 ASCII，中文消息放在带 UTF-8 BOM 的脚本中。`actions-signing-smoke.ps1` 验证真实签名入口的无密钥和测试密钥路径；`ui-readiness-smoke.ps1` 验证延迟加载控件的有界等待，和其他 UI 预览串行运行。
+
 SDK 的 Core、Tests 与 WPF 项目均以 Windows 为目标；保留平台分析器和警告即错误检查。Framework 管道启动会避免 UTF-8 控制台引入 BOM，并恢复父进程的原编码，JSON 帧始终按无 BOM UTF-8 传输。自动测试包含实际子进程的中文／Emoji 逐字节响应。
 
 ```powershell
