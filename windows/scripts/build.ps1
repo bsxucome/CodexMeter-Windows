@@ -3,12 +3,13 @@ param(
     [switch]$Publish,
     [switch]$SkipTests,
     [string]$SigningCertificatePath,
-    [string]$TimestampServer
+    [string]$TimestampServer,
+    [string]$ArtifactDirectory
 )
 $ErrorActionPreference = "Stop"
 $windowsRoot = Split-Path $PSScriptRoot -Parent
 $projectRoot = Split-Path $windowsRoot -Parent
-$artifactRoot = Join-Path $windowsRoot "artifacts"
+$artifactRoot = if ($ArtifactDirectory) { [IO.Path]::GetFullPath($ArtifactDirectory) } else { Join-Path $windowsRoot "artifacts" }
 $versionSource = [IO.File]::ReadAllText((Join-Path $windowsRoot 'CodexMeter.Core/ProductVersion.cs'))
 $releaseVersion = [regex]::Match($versionSource, 'Current = "([^"]+)"').Groups[1].Value
 if (!$releaseVersion) { throw 'Missing product version.' }

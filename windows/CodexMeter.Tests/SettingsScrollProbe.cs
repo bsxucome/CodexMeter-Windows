@@ -20,6 +20,9 @@ internal static class SettingsScrollProbe
             var assembly = Assembly.LoadFrom(args[0]);
             bool baseline = args.Length > 1 && args[1] == "--expect-trap";
             foreach (var theme in new[] { "Light", "Dark" }) Check(assembly, theme, baseline);
+            if (!baseline)
+                foreach (var theme in new[] { "Light", "Dark" })
+                    foreach (var language in new[] { "zh-CN", "en" }) CheckAppearance(assembly, theme, language);
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
@@ -78,6 +81,69 @@ internal static class SettingsScrollProbe
             Console.WriteLine("PASS " + theme + " overflowing quota list scrolls internally, hands off at both boundaries, and retains PageDown");
         }
         finally { window.Close(); }
+    }
+    private static void CheckAppearance(Assembly assembly, string theme, string language)
+    {
+        var languageField = assembly.GetType("CodexMeter.Windows.L", true).GetField("Language");
+        var previousLanguage = languageField.GetValue(null); languageField.SetValue(null, language);
+        IndicatorAppearance applied = null;
+        var type = assembly.GetType("CodexMeter.Windows.AppearanceWindow", true);
+        var window = (Window)type.GetConstructors()[0].Invoke(new object[] {
+            new Settings { Theme = theme }, new Action<IndicatorAppearance>(value => applied = value)
+        });
+        try
+        {
+            window.ShowActivated = false; window.WindowStartupLocation = WindowStartupLocation.Manual;
+            window.Left = -10000; window.Top = -10000; window.Show(); Pump(window);
+            var viewport = Find<ScrollViewer>(window, "Compact.Scroll");
+            Need(window.ActualWidth == 380 && viewport != null && viewport.ScrollableHeight > 0, "Compact appearance must retain scrollable content.");
+            Need(viewport.VerticalScrollBarVisibility == ScrollBarVisibility.Hidden && viewport.ComputedVerticalScrollBarVisibility == Visibility.Collapsed && viewport.Padding.Right == 0, "Appearance must hide the scrollbar without reserving a gutter.");
+            var apply = FindButton(window, TextCatalog.Transform("应用到设置", language));
+            var export = FindButton(window, TextCatalog.Transform("导出外观 JSON…", language));
+            var import = FindButton(window, TextCatalog.Transform("导入外观 JSON…", language));
+            var preview = FindIndicator(window);
+            Need(apply != null && export != null && import != null && preview != null, "Appearance actions and preview must be present.");
+            double footerTop = apply.TranslatePoint(new Point(), window).Y, previewTop = preview.TranslatePoint(new Point(), window).Y;
+            var slider = Find<Slider>(window, null); double value = slider.Value;
+            Wheel(slider, -120); Pump(window);
+            Need(viewport.VerticalOffset > 0 && slider.Value == value, "Wheel over an appearance slider must scroll without editing it.");
+            double before = viewport.VerticalOffset; Wheel(viewport, 120); Pump(window);
+            Need(viewport.VerticalOffset < before, "Appearance wheel must scroll up as well as down.");
+            viewport.ScrollToBottom(); Pump(window);
+            Need(apply.TranslatePoint(new Point(), window).Y == footerTop && preview.TranslatePoint(new Point(), window).Y == previewTop, "Appearance preview and footer must stay fixed during scrolling.");
+            var last = FindButton(window, TextCatalog.Transform("预览更新状态…", language));
+            Need(last != null && last.TranslatePoint(new Point(), viewport).Y + last.ActualHeight <= viewport.ActualHeight + 1, "Final preview action must be reachable.");
+            before = viewport.VerticalOffset;
+            viewport.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(window), Environment.TickCount, Key.PageUp) { RoutedEvent = Keyboard.KeyDownEvent });
+            Pump(window); Need(viewport.VerticalOffset < before, "Hidden appearance scrollbar must retain PageUp.");
+            window.Height = 520; Pump(window);
+            foreach (var button in new[] { apply, export, import })
+            {
+                var position = button.TranslatePoint(new Point(), window);
+                Need(position.X >= 0 && position.Y >= 0 && position.X + button.ActualWidth <= window.ActualWidth && position.Y + button.ActualHeight <= window.ActualHeight, "Footer actions must fit the compact window, including English and short work areas.");
+            }
+            FindButton(window, TextCatalog.Transform("醒目", language)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump(window);
+            Need(slider.Value == 22, "Compact appearance must preserve presets.");
+            slider.Value = 24;
+            apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Need(applied != null && applied.RingSize == 24, "Compact appearance must still apply edited values.");
+            Console.WriteLine("PASS appearance " + theme + "/" + language + " compact layout, hidden scrollbar, wheel/PageUp, fixed preview/footer, reachable final action, presets and apply");
+        }
+        finally { window.Close(); languageField.SetValue(null, previousLanguage); }
+    }
+    private static Button FindButton(DependencyObject root, string title)
+    {
+        var button = root as Button; if (button != null && (string)button.Content == title) return button;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        { var result = FindButton(VisualTreeHelper.GetChild(root, i), title); if (result != null) return result; }
+        return null;
+    }
+    private static FrameworkElement FindIndicator(DependencyObject root)
+    {
+        if (root.GetType().Name == "IndicatorView") return (FrameworkElement)root;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        { var result = FindIndicator(VisualTreeHelper.GetChild(root, i)); if (result != null) return result; }
+        return null;
     }
     private static void Wheel(UIElement source, int delta)
     {

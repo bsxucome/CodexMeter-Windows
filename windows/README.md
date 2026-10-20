@@ -28,6 +28,7 @@
 - 四个远程渠道分别选择五小时／每周窗口；Bark 可选图标 URL，Gotify 可设 0–10 优先级。默认仍需主动配置和启用，不发送真实测试消息。
 - 周额度 Reserve 窗口默认不在详情中显示，可在设置明确开启；已有明确显示／隐藏选择继续保留，历史采集不变。
 - 高级外观可打开独立更新演示，查看“有更新／已最新／检查失败”三种状态。演示不会联网、下载或安装；关于页增加隐私说明、上游链接、协议和本地数据入口。
+- 高级外观使用与设置页一致的 380 DIP 紧凑布局：顶部预览与底部应用／导入／导出固定，参数分组显示；隐藏滚动条，保留滚轮和键盘翻页。
 - 历史恢复增加持久化日志。替换后若进程意外退出，下次打开数据库先校验并恢复原库；成功提交的恢复保留新库。恢复前的独立备份继续保留。
 - 长历史按实际重置周期和空档缩减绘制点，原始 SQLite 记录与悬停精度不变。避免未变化 Token 的重复写入和无变化时整页重建，额度范围查询使用索引。
 - 更新辅助进程、真实 WPF 新版启动、启动失败重启旧版，以及篡改包拒绝，均有独立进程夹具验证；不触碰正式安装和用户数据。
@@ -131,6 +132,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/build.ps1 -R
 ```
 
 .NET 10 SDK 可系统安装，或运行 `windows/scripts/setup-dotnet.ps1` 校验下载到项目 `.tools/dotnet/`（dotnet.exe 在该目录下）。不会修改现有系统运行时。构建产物在 `windows/artifacts/`。
+
+若已有程序正在使用构建目录，可给 Framework 构建或发布命令添加 `-ArtifactDirectory "D:\Codex Project\CodexMeter\windows\artifacts\appearance-fix"`，将新产物放到独立目录，避免覆盖运行中的程序。
 
 ```powershell
 # Framework 构建的测试与真实额度诊断（仅输出窗口数量和安全错误）

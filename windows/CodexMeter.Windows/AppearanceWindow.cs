@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using CodexMeter.Core;
 
 namespace CodexMeter.Windows
 {
-    internal sealed class AppearanceWindow : Window
+    internal sealed class AppearanceWindow : CompactWindow
     {
         private sealed class Binding
         {
@@ -27,74 +25,84 @@ namespace CodexMeter.Windows
         private CheckBox caption;
         private TextBlock message;
         private bool updating, noReset, stale;
-        public AppearanceWindow(Settings settings, Action<IndicatorAppearance> apply)
+        public AppearanceWindow(Settings settings, Action<IndicatorAppearance> apply) : base("高级外观", settings.Theme, true)
         {
             this.settings = settings.Copy(); this.apply = apply; working = (settings.Appearance ?? new IndicatorAppearance()).Bounded();
-            Title = "CodexMeter · 高级外观"; Width = 570; Height = 760; MinWidth = 480; MinHeight = 520;
-            WindowStartupLocation = WindowStartupLocation.CenterScreen; UseLayoutRounding = true;
-            var p = Palette.For(settings.Theme); Background = p.Background; Foreground = p.Text;
-            var layout = new DockPanel { Margin = new Thickness(24) }; Content = layout;
-            var header = new StackPanel(); DockPanel.SetDock(header, Dock.Top); layout.Children.Add(header);
-            var title = p.Label("高级外观", 20, p.Text); title.FontWeight = FontWeights.SemiBold; header.Children.Add(title);
-            header.Children.Add(p.Label("此窗口仅使用演示数据；不会修改账号数据或写入历史。", 11, p.Muted));
+            var p = Theme; var body = Body;
+            Viewport.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            Viewport.Padding = new Thickness(0);
+            var previewHeader = new StackPanel { Margin = new Thickness(0, 12, 0, 0) };
+            previewHeader.Children.Add(p.Label("此窗口仅使用演示数据；不会修改账号数据或写入历史。", 11, p.Muted));
             var preview = new Border { Background = p.Surface, BorderBrush = p.Line, BorderThickness = new Thickness(1),
-                Padding = new Thickness(12), Margin = new Thickness(0, 12, 0, 12), CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(10), Margin = new Thickness(0, 8, 0, 0), CornerRadius = new CornerRadius(6),
                 Child = indicator, HorizontalAlignment = HorizontalAlignment.Left };
-            header.Children.Add(preview);
-            var footer = new StackPanel(); DockPanel.SetDock(footer, Dock.Bottom); layout.Children.Add(footer);
-            message = p.Label("应用后请在设置中保存。", 11, p.Muted); message.Margin = new Thickness(0, 8, 0, 8); footer.Children.Add(message);
-            var actions = new WrapPanel(); footer.Children.Add(actions);
-            actions.Children.Add(p.Button("应用到设置", (s, e) => { apply(working.Bounded()); Close(); }));
-            actions.Children.Add(p.Button("导出外观 JSON…", (s, e) => Export()));
-            actions.Children.Add(p.Button("导入外观 JSON…", (s, e) => Import()));
-            var body = new StackPanel(); layout.Children.Add(new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-            var presets = new WrapPanel { Margin = new Thickness(0, 0, 0, 12) }; body.Children.Add(presets);
+            previewHeader.Children.Add(preview); Header.Children.Insert(Header.Children.Count - 1, previewHeader);
+            message = p.Label("应用后请在设置中保存。", 11, p.Muted); message.Margin = new Thickness(0, 0, 0, 8); Actions.Children.Add(message);
+            var applyButton = ActionButton("应用到设置", (s, e) => { this.apply(working.Bounded()); Close(); });
+            applyButton.Margin = new Thickness(0, 0, 0, 6); Actions.Children.Add(applyButton);
+            var files = new Grid(); files.ColumnDefinitions.Add(new ColumnDefinition()); files.ColumnDefinitions.Add(new ColumnDefinition());
+            var export = ActionButton("导出外观 JSON…", (s, e) => Export()); export.Margin = new Thickness(0, 0, 3, 0); files.Children.Add(export);
+            var import = ActionButton("导入外观 JSON…", (s, e) => Import()); import.Margin = new Thickness(3, 0, 0, 0);
+            Grid.SetColumn(import, 1); files.Children.Add(import); Actions.Children.Add(files);
+            Section("外观预设");
+            var presets = new Grid(); body.Children.Add(presets);
+            int presetIndex = 0;
             foreach (var preset in new[] { new[] { "默认外观", "Default" }, new[] { "紧凑", "Compact" }, new[] { "醒目", "Bold" } })
             {
-                string key = preset[1]; presets.Children.Add(p.Button(preset[0], (s, e) => { working = IndicatorAppearance.Preset(key); LoadControls(); }));
+                presets.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(presetIndex == 0 ? 2 : 1, GridUnitType.Star) });
+                string key = preset[1];
+                var button = ActionButton(preset[0], (s, e) => { working = IndicatorAppearance.Preset(key); LoadControls(); });
+                button.Margin = new Thickness(0, 0, presetIndex < 2 ? 6 : 0, 0);
+                Grid.SetColumn(button, presetIndex++); presets.Children.Add(button);
             }
+            Section("图形尺寸");
             Add(body, p, "双环尺寸", 16, 24, a => a.RingSize, (a, v) => a.RingSize = v);
             Add(body, p, "外环粗细", 1, 4, a => a.OuterStroke, (a, v) => a.OuterStroke = v);
             Add(body, p, "内环粗细", 1, 3, a => a.InnerStroke, (a, v) => a.InnerStroke = v);
             Add(body, p, "双环间距", 2, 6, a => a.RingGap, (a, v) => a.RingGap = v);
-            Add(body, p, "主字号", 10, 15, a => a.FontSize, (a, v) => a.FontSize = v);
-            Add(body, p, "名称字号", 8, 11, a => a.CaptionSize, (a, v) => a.CaptionSize = v);
             Add(body, p, "图形与数字间距", 0, 8, a => a.Spacing, (a, v) => a.Spacing = v);
             Add(body, p, "横条宽度", 16, 48, a => a.BarWidth, (a, v) => a.BarWidth = v);
-            caption = new CheckBox { Content = "显示 Codex 名称", Foreground = p.Text, IsChecked = working.ShowCaption, Margin = new Thickness(0, 8, 0, 12) };
+            Section("文字与颜色");
+            Add(body, p, "主字号", 10, 15, a => a.FontSize, (a, v) => a.FontSize = v);
+            Add(body, p, "名称字号", 8, 11, a => a.CaptionSize, (a, v) => a.CaptionSize = v);
+            caption = new CheckBox { Content = "显示 Codex 名称", Foreground = p.Text, IsChecked = working.ShowCaption, Margin = new Thickness(0, 4, 0, 10) };
             caption.Click += (s, e) => Update(); body.Children.Add(caption);
             body.Children.Add(p.Label("时间颜色", 12, p.Text));
-            color = p.Combo(); foreach (var label in new[] { "蓝色", "青色", "紫色" }) color.Items.Add(label);
+            color = p.Combo(); color.Margin = new Thickness(0, 6, 0, 0);
+            System.Windows.Automation.AutomationProperties.SetName(color, L.T("时间颜色"));
+            foreach (var label in new[] { "蓝色", "青色", "紫色" }) color.Items.Add(label);
             color.SelectionChanged += (s, e) => Update(); body.Children.Add(color);
-            var scenarios = new WrapPanel { Margin = new Thickness(0, 16, 0, 10) }; body.Children.Add(scenarios);
+            Section("演示预览");
+            var scenarios = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) }; body.Children.Add(scenarios);
             foreach (var scenario in new[] { "节奏正常", "消耗偏快", "低额度", "无重置时间", "数据过期" })
             {
-                string key = scenario; scenarios.Children.Add(p.Button(key, (s, e) => Scenario(key)));
+                string key = scenario; var button = ActionButton(key, (s, e) => Scenario(key));
+                button.Margin = new Thickness(0, 0, 6, 6); scenarios.Children.Add(button);
             }
             body.Children.Add(p.Label("演示剩余额度", 12, p.Text)); quota = DemoSlider(74); body.Children.Add(quota);
             body.Children.Add(p.Label("演示剩余时间", 12, p.Text)); time = DemoSlider(64); body.Children.Add(time);
-            body.Children.Add(p.Button("预览 30 天历史…", (s, e) => {
+            var historyButton = ActionButton("预览 30 天历史…", (s, e) => {
                 var state = DemoState();
                 state.Windows = new List<QuotaWindow> { new QuotaWindow { Id = "codex:10080", Bucket = "codex", UsedPercent = 38,
                     DurationMinutes = 10080, ResetsAt = state.UpdatedAt.Value.AddDays(4.8) } };
                 new HistoryWindow(null, true, () => state, () => this.settings) { Owner = this }.Show();
-            }));
-            body.Children.Add(p.Button("预览更新状态…", (s, e) => {
+            }); historyButton.Margin = new Thickness(0, 0, 0, 6); body.Children.Add(historyButton);
+            var updateButton = ActionButton("预览更新状态…", (s, e) => {
                 var updater = new WindowsUpdateService(() => this.settings, true, () => { }); updater.Simulate("available");
                 var about = new AboutWindow(this.settings, true, updater, next => { }) { Owner = this };
                 about.Closed += (closed, value) => updater.Dispose(); about.Show();
-            }));
-            LoadControls(); L.Apply(this);
+            }); updateButton.Margin = new Thickness(0); body.Children.Add(updateButton);
+            LoadControls(); FinishLayout();
         }
         private Slider DemoSlider(double initial)
         {
-            var slider = new Slider { Minimum = 0, Maximum = 100, Value = initial, TickFrequency = 1, IsSnapToTickEnabled = true, Margin = new Thickness(0, 6, 4, 12) };
+            var slider = new Slider { Minimum = 0, Maximum = 100, Value = initial, TickFrequency = 1, IsSnapToTickEnabled = true, Margin = new Thickness(0, 4, 0, 8) };
             slider.ValueChanged += (s, e) => { if (time != null && quota != null) RenderPreview(); }; return slider;
         }
         private void Add(Panel body, Palette p, string name, double min, double max, Func<IndicatorAppearance, double> get, Action<IndicatorAppearance, double> set)
         {
             var label = p.Label("", 12, p.Text); body.Children.Add(label);
-            var slider = new Slider { Minimum = min, Maximum = max, Value = get(working), TickFrequency = .5, IsSnapToTickEnabled = true, Margin = new Thickness(0, 6, 4, 12) };
+            var slider = new Slider { Minimum = min, Maximum = max, Value = get(working), TickFrequency = .5, IsSnapToTickEnabled = true, Margin = new Thickness(0, 4, 0, 8) };
             System.Windows.Automation.AutomationProperties.SetName(slider, L.T(name));
             bindings.Add(new Binding { Slider = slider, Label = label, Name = name, Get = get, Set = set });
             slider.ValueChanged += (s, e) => Update(); body.Children.Add(slider);

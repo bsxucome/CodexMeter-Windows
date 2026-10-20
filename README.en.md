@@ -36,6 +36,8 @@ An independent Windows implementation inspired by [raycalrui/CodexMeter](https:/
 
 Settings hides its vertical scrollbars while retaining wheel and keyboard scrolling. Ordering lists pass scrolling to the page when their content fits or reaches a boundary; longer lists retain internal scrolling.
 
+Advanced appearance shares the compact Settings layout, with a hidden scrollbar, a fixed live preview and fixed footer actions. Controls are grouped by graphics, text and color, with Chinese and English support.
+
 Credits, reset opportunities, and Token activity depend on account and API availability. Missing data is unavailable or omitted rather than displayed as zero. Remote reminders require explicit configuration and opt-in.
 
 ## Download and get started

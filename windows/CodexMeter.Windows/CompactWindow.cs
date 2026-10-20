@@ -11,6 +11,7 @@ namespace CodexMeter.Windows
     internal class CompactWindow : Window
     {
         protected readonly Palette Theme;
+        protected readonly StackPanel Header = new StackPanel();
         protected readonly StackPanel Body = new StackPanel();
         protected readonly StackPanel Actions = new StackPanel();
         protected readonly ScrollViewer Viewport;
@@ -27,7 +28,7 @@ namespace CodexMeter.Windows
             layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             layout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var header = new StackPanel();
+            var header = Header;
             var heading = new DockPanel();
             var close = Theme.Button("×", (s, e) => Close()); close.Width = 26; close.MinHeight = 24; close.Padding = new Thickness(0); close.Margin = new Thickness(0);
             close.Background = Brushes.Transparent; close.BorderThickness = new Thickness(0);

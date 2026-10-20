@@ -212,6 +212,10 @@ RSA 签名公钥 JSON|RSA signing public key JSON
 标准周额度不可用|Standard weekly quota unavailable
 每周额度小图|Weekly quota chart
 高级外观|Advanced appearance
+外观预设|Appearance presets
+图形尺寸|Graphic dimensions
+文字与颜色|Text and color
+演示预览|Demo preview
 此窗口仅使用演示数据；不会修改账号数据或写入历史。|This window uses demo data only. Account data and history remain untouched.
 应用后请在设置中保存。|Apply here, then save in Settings.
 应用到设置|Apply to Settings
