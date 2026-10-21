@@ -1,3 +1,23 @@
+function Wait-UiCondition([scriptblock]$Probe, [string]$Description, [int]$TimeoutSeconds = 15) {
+    $elapsed = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        try { if (& $Probe) { return } } catch [System.Windows.Automation.ElementNotAvailableException] { }
+        if ($elapsed.Elapsed.TotalSeconds -ge $TimeoutSeconds) { break }
+        Start-Sleep -Milliseconds 100
+    } while ($true)
+    throw "UI state not ready: $Description"
+}
+function Wait-ElementValue($Root, [string]$Id, [string]$Expected, [int]$TimeoutSeconds = 15) {
+    $handle = $Root.Current.NativeWindowHandle
+    $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::AutomationIdProperty, $Id)
+    Wait-UiCondition {
+        $provider = if ($handle -ne 0) { [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$handle) } else { $Root }
+        $element = $provider.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+        if (!$element) { return $false }
+        $value = $element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+        return [string]::Equals($value.Current.Value, $Expected, [StringComparison]::Ordinal)
+    } "value of $Id" $TimeoutSeconds
+}
 function Owned-Window([int]$OwnerId, [string]$Name) {
     $condition = New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $OwnerId)),

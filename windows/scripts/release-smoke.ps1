@@ -2,84 +2,70 @@
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
-function Owned([int]$OwnerId, [string]$Name) {
-    $condition = New-Object System.Windows.Automation.AndCondition(
-        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $OwnerId)),
-        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Name)))
-    for ($attempt = 0; $attempt -lt 60; $attempt++) {
-        $window = [System.Windows.Automation.AutomationElement]::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Children, $condition)
-        if ($window) { return $window }
-        Start-Sleep -Milliseconds 100
-    }
-    throw "Missing owned window: $Name"
-}
-function Element($Root, [string]$Value, [switch]$ById) {
-    $property = if ($ById) { [System.Windows.Automation.AutomationElement]::AutomationIdProperty } else { [System.Windows.Automation.AutomationElement]::NameProperty }
-    $condition = New-Object System.Windows.Automation.PropertyCondition($property, $Value)
-    $found = $Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-    if (!$found) { throw "Missing element: $Value" }
-    return $found
-}
-function Press($Root, [string]$Name) { (Element $Root $Name).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
+. (Join-Path $PSScriptRoot 'ui-automation-common.ps1')
+function Press($Root, [string]$Name) { (Find-Element $Root $Name).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
 function Close-Window($Root) { $Root.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close(); Start-Sleep -Milliseconds 150 }
 $owned = Start-Process -FilePath $AppPath -ArgumentList '--preview','--settings' -WindowStyle Hidden -PassThru
 try {
-    $settings = Owned $owned.Id 'CodexMeter for Windows · 设置'
+    $settings = Owned-Window $owned.Id 'CodexMeter for Windows · 设置'
     $width = $settings.Current.BoundingRectangle.Width
     if ($width -lt 375 -or $width -gt 575) { throw 'Settings width does not match the compact panel at 100-150% DPI.' }
-    $save = Element $settings '保存设置'
+    $save = Find-Element $settings '保存设置'
     $before = $save.Current.BoundingRectangle
-    $scroll = (Element $settings 'Compact.Scroll' -ById).GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+    $scroll = (Find-Element $settings 'Compact.Scroll' -ById).GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
     if (!$scroll.Current.VerticallyScrollable) { throw 'Compact settings must remain scrollable.' }
     $scroll.SetScrollPercent(-1,100)
     Start-Sleep -Milliseconds 150
     if ([Math]::Abs($save.Current.BoundingRectangle.Top - $before.Top) -gt 1 -or $save.Current.IsOffscreen) { throw 'Settings footer moved with body scrolling.' }
     Write-Output 'PASS compact settings width, working body scroll and fixed save footer'
     Press $settings '远程补充提醒…'
-    $remote = Owned $owned.Id 'CodexMeter for Windows · 远程补充提醒'
+    $remote = Owned-Window $owned.Id 'CodexMeter for Windows · 远程补充提醒'
     foreach ($kind in @('Bark','Gotify','Telegram','Discord')) {
-        if ((Element $remote "Remote.Test.$kind" -ById).Current.IsEnabled) { throw 'Preview may not send remote messages.' }
-        if (!(Element $remote "Remote.Secret.$kind" -ById).Current.IsPassword) { throw 'Remote credential input must be masked.' }
-        $null = Element $remote "Remote.FiveHour.$kind" -ById
-        $null = Element $remote "Remote.Weekly.$kind" -ById
+        if ((Find-Element $remote "Remote.Test.$kind" -ById).Current.IsEnabled) { throw 'Preview may not send remote messages.' }
+        if (!(Find-Element $remote "Remote.Secret.$kind" -ById).Current.IsPassword) { throw 'Remote credential input must be masked.' }
+        $null = Find-Element $remote "Remote.FiveHour.$kind" -ById
+        $null = Find-Element $remote "Remote.Weekly.$kind" -ById
     }
     if ([Math]::Abs($remote.Current.BoundingRectangle.Width - $width) -gt 1) { throw 'Remote width differs from Settings.' }
     Close-Window $remote
     Write-Output 'PASS four isolated remote channels, masked credentials and disabled preview transmission'
     Press $settings '备份、恢复与账号管理…'
-    $data = Owned $owned.Id 'CodexMeter for Windows · 历史与备份'
+    $data = Owned-Window $owned.Id 'CodexMeter for Windows · 历史与备份'
     foreach ($name in @('导出历史备份…','恢复历史备份…','清除全部账号历史…')) {
-        if ((Element $data $name).Current.IsEnabled) { throw 'Preview must not access production history.' }
+        if ((Find-Element $data $name).Current.IsEnabled) { throw 'Preview must not access production history.' }
     }
     Close-Window $data
     Write-Output 'PASS history backup and all-account management are isolated in preview'
     Press $settings '关于与检查更新…'
-    $about = Owned $owned.Id 'CodexMeter for Windows · 关于与更新'
+    $about = Owned-Window $owned.Id 'CodexMeter for Windows · 关于与更新'
     foreach ($name in @('Update.Check','Update.Download','Update.Install')) {
-        if ((Element $about $name -ById).Current.IsEnabled) { throw 'Preview cannot check, download or install real updates.' }
+        if ((Find-Element $about $name -ById).Current.IsEnabled) { throw 'Preview cannot check, download or install real updates.' }
     }
-    $null = Element $about 'Update.ProjectHome' -ById
-    $null = Element $about 'Update.Releases' -ById
-    $feed = (Element $about 'Update.Feed' -ById).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
-    if ($feed.Current.Value -ne 'https://github.com/bsxucome/CodexMeter-for-Windows/releases/download/windows-update-feed/{channel}-{runtime}.json') { throw 'Default feed must point to the project GitHub signed feed assets.' }
+    $null = Find-Element $about 'Update.ProjectHome' -ById
+    $null = Find-Element $about 'Update.Releases' -ById
+    $feed = (Find-Element $about 'Update.Feed' -ById).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    $expectedFeed = 'https://github.com/bsxucome/CodexMeter-for-Windows/releases/download/windows-update-feed/{channel}-{runtime}.json'
+    Wait-ElementValue $about 'Update.Feed' $expectedFeed
     $feed.SetValue('https://example.test/custom.json')
-    (Element $about 'Update.UseGitHub' -ById).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-    if ($feed.Current.Value -notlike 'https://github.com/bsxucome/CodexMeter-for-Windows/*') { throw 'GitHub source action did not restore the project source.' }
-    $null = Element $about 'Update.PublicKey' -ById
+    Wait-ElementValue $about 'Update.Feed' 'https://example.test/custom.json'
+    (Find-Element $about 'Update.UseGitHub' -ById).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Wait-ElementValue $about 'Update.Feed' $expectedFeed
+    Write-Output 'PASS GitHub source action restores the exact manifest URL after the WPF action completes'
+    $null = Find-Element $about 'Update.PublicKey' -ById
     Press $about '保存更新设置'
-    $null = Element $about '更新设置已保存。'
-    if ((Element $about 'Update.Check' -ById).Current.IsEnabled) { throw 'A prepared source without a public key must remain disabled.' }
+    $null = Find-Element $about '更新设置已保存。'
+    if ((Find-Element $about 'Update.Check' -ById).Current.IsEnabled) { throw 'A prepared source without a public key must remain disabled.' }
     Press $about '模拟有更新'
-    $null = Element $about '发现新版本：9.9.9 · 演示数据'
-    if ((Element $about 'Update.Install' -ById).Current.IsEnabled) { throw 'Simulated updates must never become installable.' }
+    $null = Find-Element $about '发现新版本：9.9.9 · 演示数据'
+    if ((Find-Element $about 'Update.Install' -ById).Current.IsEnabled) { throw 'Simulated updates must never become installable.' }
     Press $about '模拟检查失败'
-    $null = Element $about '检查失败；演示错误状态。'
+    $null = Find-Element $about '检查失败；演示错误状态。'
     Press $about '模拟最新版本'
-    $null = Element $about '当前已是此通道的最新版本。'
+    $null = Find-Element $about '当前已是此通道的最新版本。'
     if ([Math]::Abs($about.Current.BoundingRectangle.Width - $width) -gt 1) { throw 'About width differs from Settings.' }
     Close-Window $about
     Close-Window $settings
-    Press (Owned $owned.Id 'CodexMeter for Windows') '退出'
+    Press (Owned-Window $owned.Id 'CodexMeter for Windows') '退出'
     if (!$owned.WaitForExit(5000)) { throw 'Release preview failed to exit.' }
     Write-Output 'PASS configurable Windows update source/public key and preview install isolation'
-} finally { $owned.Refresh(); if (!$owned.HasExited) { $owned.Kill() } }
+} finally { $owned.Refresh(); if (!$owned.HasExited) { $owned.Kill(); if (!$owned.WaitForExit(5000)) { throw 'Release preview did not stop; owned process state is retained.' } }; $owned.Dispose() }

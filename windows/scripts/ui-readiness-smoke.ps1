@@ -20,6 +20,22 @@ public static class DelayedUiFixture {
     [STAThread] public static void Main(string[] args) {
         if (args.Length != 1 || File.ReadAllText(Path.Combine(args[0], ".fixture")) != "CodexMeter.UiReadinessFixture.v1") return;
         var body = new StackPanel();
+        const string source = "https://github.com/bsxucome/CodexMeter-for-Windows/releases/download/windows-update-feed/{channel}-{runtime}.json";
+        var feed = new TextBox { Text = "https://example.test/custom.json" };
+        AutomationProperties.SetAutomationId(feed, "Update.Feed"); body.Children.Add(feed);
+        var restore = new Button { Content = "Restore fixture feed" }; body.Children.Add(restore);
+        DateTime? responseBegan = null;
+        var response = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        restore.Click += delegate { responseBegan = null; response.Start(); };
+        response.Tick += delegate {
+            if (!File.Exists(Path.Combine(args[0], "release-response"))) return;
+            if (!responseBegan.HasValue) responseBegan = DateTime.UtcNow;
+            if (DateTime.UtcNow - responseBegan.Value < TimeSpan.FromMilliseconds(1200)) return;
+            response.Stop();
+            var replacement = new TextBox { Text = File.Exists(Path.Combine(args[0], "wrong-response")) ? source + ".wrong" : source };
+            AutomationProperties.SetAutomationId(replacement, "Update.Feed");
+            int index = body.Children.IndexOf(feed); body.Children.RemoveAt(index); body.Children.Insert(index, replacement); feed = replacement;
+        };
         body.Children.Add(new TextBlock { Text = "CodexMeter delayed fixture window" });
         var viewport = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden };
         AutomationProperties.SetAutomationId(viewport, "Fixture.Scroll");
@@ -56,6 +72,32 @@ public static class DelayedUiFixture {
     Add-Type -TypeDefinition $code -OutputAssembly $exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll', (Join-Path $wpf 'WindowsBase.dll'), (Join-Path $wpf 'PresentationCore.dll'), (Join-Path $wpf 'PresentationFramework.dll'), 'System.Xaml.dll', (Join-Path $wpf 'UIAutomationTypes.dll'))
     $owned = Start-Process -FilePath $exe -ArgumentList ('"' + $fixture + '"') -WindowStyle Hidden -PassThru
     $window = Owned-Window $owned.Id 'CodexMeter UI readiness fixture'
+    $expectedFeed = 'https://github.com/bsxucome/CodexMeter-for-Windows/releases/download/windows-update-feed/{channel}-{runtime}.json'
+    $feed = (Find-Element $window 'Update.Feed' -ById).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    $restore = (Find-Element $window 'Restore fixture feed').GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+    $restore.Invoke()
+    if ($feed.Current.Value -eq $expectedFeed) { throw 'Delayed response fixture did not reproduce the former immediate-read race.' }
+    $stalled = $false
+    try { Wait-ElementValue $window 'Update.Feed' $expectedFeed -TimeoutSeconds 1 } catch { if ($_.Exception.Message -ne 'UI state not ready: value of Update.Feed') { throw }; $stalled = $true }
+    if (!$stalled) { throw 'An action that has not applied its value must fail at the deadline.' }
+    [IO.File]::WriteAllText((Join-Path $fixture 'release-response'), 'fixture')
+    $responseTime = [Diagnostics.Stopwatch]::StartNew()
+    Wait-ElementValue $window 'Update.Feed' $expectedFeed
+    if ($responseTime.Elapsed.TotalMilliseconds -lt 1000) { throw 'Delayed response was accepted before the replacement value was applied.' }
+    Write-Output 'PASS old immediate assertion fails while bounded value waiting survives a delayed invoke and replaced WPF provider'
+    [IO.File]::WriteAllText((Join-Path $fixture 'wrong-response'), 'fixture')
+    (Find-Element $window 'Update.Feed' -ById).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('https://example.test/custom.json')
+    Wait-ElementValue $window 'Update.Feed' 'https://example.test/custom.json'
+    $restore.Invoke()
+    $wrong = $false
+    try { Wait-ElementValue $window 'Update.Feed' $expectedFeed -TimeoutSeconds 2 } catch { if ($_.Exception.Message -ne 'UI state not ready: value of Update.Feed') { throw }; $wrong = $true }
+    if (!$wrong) { throw 'A wrong URL sharing the expected prefix must fail.' }
+    Wait-ElementValue $window 'Update.Feed' ($expectedFeed + '.wrong')
+    Write-Output 'PASS wrong same-prefix URL still fails at the bounded deadline'
+    $absentValue = $false
+    try { Wait-ElementValue $window 'Absent.Feed' $expectedFeed -TimeoutSeconds 1 } catch { if ($_.Exception.Message -ne 'UI state not ready: value of Absent.Feed') { throw }; $absentValue = $true }
+    if (!$absentValue) { throw 'A missing source field must fail.' }
+    Write-Output 'PASS a missing source control still fails rather than skipping the value assertion'
     [IO.File]::WriteAllText((Join-Path $fixture 'begin-wait'), 'fixture')
     $timer = [Diagnostics.Stopwatch]::StartNew()
     $control = Find-Element $window 'QuotaRange' -ById

@@ -1,5 +1,13 @@
 # Verification — Windows v0.7.6
 
+## 0.7.6 Actions 界面回归时序修复（2026-10-21）
+
+用户会话采集的 main 运行 [39615050341](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39615050341) 对应 b83d8fd8eaf39a9efc2002dd59abe134d5d8fe40，Framework 在 release-smoke.ps1 的 GitHub 源恢复断言失败：Invoke 后立即读取旧值。微软 [InvokePattern.Invoke 说明](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.invokepattern.invoke) 表明调用应立即返回，不能把返回当作点击处理完成。之前的本地通过不代表无此时序竞争；该 main 失败阻止了标签及正式发行，不能视为 0.7.6 已发布。
+
+发行界面检查复用已有的窗口／控件就绪帮助函数，值检查按单调计时在 15 秒内轮询完整地址并重新获取 UIA provider，代替立即读取及前缀匹配；保存提示与演示状态同样等待其控件实际出现。失败仍终止检查，不增加重试点击，不修改更新器或放宽签名校验。独立 WPF 回归通过文件握手阻止响应，再延迟 1.2 秒替换文本框；验证旧立即断言会失败，新的有界等待通过，未响应、错误的同前缀地址及不存在的控件仍失败。测试只拥有其 GUID 夹具与进程，未触及生产状态。
+
+本次修复保留尚未发布的版本 0.7.6，不移动既有标签。修复后的 ui-readiness-smoke 通过上述延迟／失败用例和既有窗口、滚动回归；release-smoke 在实际解压后的 0.7.6 程序上通过精确 GitHub 地址恢复、保存提示、模拟状态及管理窗口隔离；PowerShell 语法、编码与源码空白检查通过。已有用户实例未关闭。以下原始应用构建记录仍有效，没有改动 C# 程序或重跑不相关核心测试。新的托管构建和发行结果须以对应新提交的运行确认。
+
 ## 0.7.6 项目主页与默认更新源（2026-10-21）
 
 AboutWindow 新增本仓库项目主页与 GitHub 最新发行页入口，保留单独的上游链接。默认地址为本项目 releases/download/windows-update-feed/{channel}-{runtime}.json，与现有 publish-release.ps1 签名资产镜像一致。首次安装及旧版空地址使用默认值；已有自定义源／通道／公钥保持原值。孤立公钥不会因迁移绑定到新源，空源遗留的自动更新标记不会被激活。允许在未提供公钥时保存地址，但自动检查／安装必须具备可信公钥，逐包签名、运行时、通道、文件哈希和安装回退策略未放宽。
