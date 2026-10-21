@@ -73,8 +73,14 @@ namespace CodexMeter.Windows
             style.Setters.Add(new Setter(Control.ForegroundProperty, Text));
             style.Setters.Add(new Setter(Control.BackgroundProperty, Surface));
             style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8, 6, 8, 6)));
+            style.Setters.Add(new Setter(Control.TemplateProperty, (ControlTemplate)XamlReader.Parse(
+                "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' TargetType='ComboBoxItem'>" +
+                "<Border Background='{TemplateBinding Background}' CornerRadius='4' Padding='{TemplateBinding Padding}'>" +
+                "<ContentPresenter VerticalAlignment='Center'/></Border></ControlTemplate>")));
             var highlighted = new Trigger { Property = ComboBoxItem.IsHighlightedProperty, Value = true };
             highlighted.Setters.Add(new Setter(Control.BackgroundProperty, Line)); style.Triggers.Add(highlighted);
+            var selected = new Trigger { Property = ComboBoxItem.IsSelectedProperty, Value = true };
+            selected.Setters.Add(new Setter(Control.BackgroundProperty, Brush(Dark ? "#284665" : "#DCE9F7"))); style.Triggers.Add(selected);
             combo.ItemContainerStyle = style; return combo;
         }
         public Button Button(string text, RoutedEventHandler click)

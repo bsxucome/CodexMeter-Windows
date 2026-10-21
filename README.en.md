@@ -38,6 +38,8 @@ Settings hides its vertical scrollbars while retaining wheel and keyboard scroll
 
 Advanced appearance shares the compact Settings layout, with a hidden scrollbar, a fixed live preview and fixed footer actions. Controls are grouped by graphics, text and color, with Chinese and English support.
 
+Settings and management windows use muted surfaces, rounded fields and lists, soft selection colors, and clear primary actions in both themes. Ordering lists fit their content to reduce empty space.
+
 Credits, reset opportunities, and Token activity depend on account and API availability. Missing data is unavailable or omitted rather than displayed as zero. Remote reminders require explicit configuration and opt-in.
 
 ## Download and get started

@@ -104,7 +104,7 @@ namespace CodexMeter.Windows
             var showReset = Toggle(root, p, "重置倒计时与日期", current.ShowReset);
             root.Children.Add(p.Label("弹窗区域顺序", 13, p.Text));
             var sections = new ListBox { Background = p.Surface, Foreground = p.Text, BorderBrush = p.Line,
-                Margin = new Thickness(0, 8, 0, 8), Height = 130 };
+                Margin = new Thickness(0, 8, 0, 8), MaxHeight = 190 };
             System.Windows.Automation.AutomationProperties.SetAutomationId(sections, "SectionOrder");
             ScrollViewer.SetVerticalScrollBarVisibility(sections, ScrollBarVisibility.Hidden);
             sections.PreviewMouseWheel += ForwardListWheel;
@@ -125,7 +125,7 @@ namespace CodexMeter.Windows
             {
                 var foundWindow = windows.FirstOrDefault(w => w.Id == id);
                 rows.Items.Add(new CheckBox { Content = foundWindow == null ? id : foundWindow.Title, Tag = id,
-                    IsChecked = foundWindow == null ? !(current.HiddenWindows ?? new string[0]).Contains(id) : current.IsWindowVisible(foundWindow), Foreground = p.Text, Margin = new Thickness(4) });
+                    IsChecked = foundWindow == null ? !(current.HiddenWindows ?? new string[0]).Contains(id) : current.IsWindowVisible(foundWindow), Foreground = p.Text, Margin = new Thickness(0) });
             }
             root.Children.Add(rows);
             var orderButtons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 18) };

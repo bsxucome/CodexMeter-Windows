@@ -4,6 +4,8 @@
 
 设置页已隐藏右侧滚动条并保留滚动功能。“弹窗区域顺序”和“额度窗口显示与顺序”列表内可使用滚轮；内容无需内部滚动或已到边界时，滚轮继续滚动外层设置页。列表选择、排序操作与键盘翻页保持可用。
 
+0.7.4 的设置、高级外观、远程提醒、历史与备份、关于页面统一使用柔和灰底与圆角控件，去除大块纯白输入／列表底色。列表按内容调整高度，选中与键盘焦点清晰区分，底部主要操作使用强调色。
+
 支持 Windows 11 x64。默认在主屏幕任务栏区域显示双环＋百分比：外环是剩余额度，蓝色内环是剩余时间。点击展开详情，拖动调整位置，右键可重置位置、设置或退出。详情按原项目采用 380 宽度、紧凑字号、分隔线、矢量图标、成对进度条和精确重置日期；Windows 11 上启用系统弹窗背景材质，不支持时使用纯色。系统托盘入口继续提供快捷操作。
 
 ## 运行
@@ -16,10 +18,10 @@
 应用优先使用 npm 包内的原生 codex.exe，不执行 codex.ps1，也不修改 PowerShell 执行策略。无原生包时可使用 Node 和官方 codex.js 入口。普通任意 cmd/bat 脚本不受支持。
 
 两种发布：
-- `CodexMeter-Windows-0.7.0-dotnet10-x64.zip`：推荐的 .NET 10 自包含包，不需要单独安装 .NET。
-- `CodexMeter-Windows-0.7.0-framework-x64.zip`：兼容包，使用 .NET Framework 4.8 或更新版本。
+- `CodexMeter-Windows-<版本>-dotnet10-x64.zip`：推荐的 .NET 10 自包含包，不需要单独安装 .NET。
+- `CodexMeter-Windows-<版本>-framework-x64.zip`：兼容包，使用 .NET Framework 4.8 或更新版本。
 
-两种便携包均已在 [0.7.0 发行页](https://github.com/bsxucome/CodexMeter-for-Windows/releases/tag/windows-v0.7.0) 提供，并附 SHA-256 校验文件。
+已发布的便携包见 [最新发行页](https://github.com/bsxucome/CodexMeter-for-Windows/releases/latest)，每种运行时均附 SHA-256 校验文件。本地构建版本可能领先于已发布版本，以实际 Release 标签为准。
 
 暂不支持 WSL CLI、ARM64。API Key / Bedrock 等账号可能不提供 ChatGPT 额度与 Token 活动；不存在的数据不会被显示为零。安装在桌面应用私有位置的 Codex 需要手动指定路径，不保证与独立 CLI 自动共享登录状态。完整功能对齐状态见 [PARITY.md](PARITY.md)，当前仍是分阶段移植。
 

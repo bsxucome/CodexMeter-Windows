@@ -17,7 +17,11 @@ namespace CodexMeter.Windows
         protected readonly ScrollViewer Viewport;
         public CompactWindow(string title, string theme, bool preview)
         {
-            Theme = Palette.For(theme); Title = "CodexMeter · " + L.T(title);
+            Theme = Palette.For(theme);
+            Theme.Surface = Palette.Brush(Theme.Dark ? "#323439" : "#ECEEF1");
+            Theme.Line = Palette.Brush(Theme.Dark ? "#45484E" : "#D9DDE2");
+            PreferencesStyles.Apply(this, Theme);
+            Title = "CodexMeter · " + L.T(title);
             Width = 380; Height = Math.Min(700, SystemParameters.WorkArea.Height - 32); MinHeight = 360;
             WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false;
             WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = Theme.Background;
@@ -54,7 +58,16 @@ namespace CodexMeter.Windows
         { var button = Theme.Button(title, action); button.MinHeight = 28; button.FontSize = 12; button.Padding = new Thickness(8, 4, 8, 4); return button; }
         protected void FinishLayout()
         {
-            CompactControls(Body); CompactControls(Actions); L.Apply(this);
+            CompactControls(Body); CompactControls(Actions);
+            var primary = Actions.Children.OfType<Button>().FirstOrDefault();
+            if (primary != null)
+            {
+                primary.Background = Palette.Brush(Theme.Dark ? "#60AFFF" : "#0067C0");
+                primary.Foreground = Palette.Brush(Theme.Dark ? "#15202B" : "#FFFFFF");
+                primary.BorderBrush = primary.Background; primary.MinHeight = 32;
+                primary.Margin = new Thickness(0, primary.Margin.Top, 0, primary.Margin.Bottom);
+            }
+            L.Apply(this);
         }
         private static void CompactControls(DependencyObject parent)
         {
