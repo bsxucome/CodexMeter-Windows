@@ -259,7 +259,32 @@ namespace CodexMeter.Tests
                 var settings = new SettingsStore(Path.Combine(fixture.Directory, "settings.json"));
                 settings.Save(new Settings { UpdateFeed = "https://example.test/{channel}/{runtime}.json", UpdatePublicKey = fixture.Public, UpdateChannel = "beta", UpdateAutomatic = true, UpdateAutoInstall = true }); string warning;
                 var loaded = settings.Load(out warning); Check(loaded.Copy().UpdateFeed.Contains("{runtime}") && loaded.UpdateChannel == "beta" && loaded.UpdateAutomatic && loaded.UpdateAutoInstall && loaded.UpdatePublicKey == fixture.Public, "update settings preserve source, trust key, channel and opt-in choices");
-                File.WriteAllText(settings.FilePath, "{}"); loaded = settings.Load(out warning); Check(loaded.UpdateFeed == "" && !loaded.UpdateAutomatic && !loaded.UpdateAutoInstall, "existing installations migrate without an invented update source or automatic installation");
+                File.WriteAllText(settings.FilePath, "{}"); loaded = settings.Load(out warning);
+                Check(loaded.UpdateFeed == WindowsReleaseSource.GitHubFeed && loaded.UpdatePublicKey == "" && !loaded.UpdateAutomatic && !loaded.UpdateAutoInstall && !WindowsReleaseSource.Configured(loaded), "existing installations use the project GitHub source without inventing trust or enabling automatic updates");
+                WindowsReleaseSource.Validate(loaded); settings.Save(loaded); loaded = settings.Load(out warning);
+                Check(loaded.UpdateFeed == WindowsReleaseSource.GitHubFeed && !WindowsReleaseSource.Configured(loaded), "a prepared GitHub source can be saved without a key but cannot check or install signed updates");
+                Check(new Settings().UpdateFeed == WindowsReleaseSource.GitHubFeed && !WindowsReleaseSource.Configured(new Settings()), "new installations default to the project source and remain untrusted");
+                foreach (string feedChannel in new[] { "stable", "beta" }) foreach (string runtime in new[] { "framework-x64", "dotnet10-x64" })
+                    Check(WindowsReleaseSource.GitHubFeed.Replace("{runtime}", runtime).Replace("{channel}", feedChannel).EndsWith("/releases/download/windows-update-feed/" + feedChannel + "-" + runtime + ".json"), "GitHub feed path matches the Actions mirrored asset: " + feedChannel + "-" + runtime);
+                File.WriteAllText(settings.FilePath, "{\"updateFeed\":\"\",\"updateChannel\":\"beta\"}"); loaded = settings.Load(out warning);
+                Check(loaded.UpdateFeed == WindowsReleaseSource.GitHubFeed && loaded.UpdateChannel == "beta" && !WindowsReleaseSource.Configured(loaded), "beta source migration preserves the channel without inventing trust");
+                File.WriteAllText(settings.FilePath, Json.Encode(new { updateFeed = "", updatePublicKey = fixture.Public, updateAutomatic = true, updateAutoInstall = true })); loaded = settings.Load(out warning);
+                Check(loaded.UpdateFeed == "" && loaded.UpdatePublicKey == fixture.Public && !WindowsReleaseSource.Configured(loaded) && !loaded.UpdateAutomatic && !loaded.UpdateAutoInstall, "migration never binds an orphaned trust key or enables saved automatic flags against a new source");
+                File.WriteAllText(settings.FilePath, "{\"updateFeed\":\"\",\"updateAutomatic\":true,\"updateAutoInstall\":true}"); loaded = settings.Load(out warning);
+                Check(loaded.UpdateFeed == WindowsReleaseSource.GitHubFeed && !loaded.UpdateAutomatic && !loaded.UpdateAutoInstall, "preparing a default source never activates old automatic flags");
+                var policy = new Settings { UpdatePublicKey = fixture.Public }; WindowsReleaseSource.Validate(policy);
+                Check(WindowsReleaseSource.Configured(policy), "signed GitHub stable source is enabled only with explicit trust");
+                policy.UpdateChannel = "beta";
+                WindowsReleaseSource.Validate(policy);
+                Check(WindowsReleaseSource.Configured(policy), "GitHub mirror supports explicit signed beta updates without using latest stable");
+                policy.UpdateFeed = "https://example.test/{channel}/{runtime}.json"; WindowsReleaseSource.Validate(policy);
+                Check(WindowsReleaseSource.Configured(policy), "custom signed beta feeds remain supported");
+                policy.UpdatePublicKey = ""; policy.UpdateAutomatic = true;
+                Reject(() => WindowsReleaseSource.Validate(policy), "automatic checks cannot be enabled without a trusted public key");
+                policy.UpdateAutomatic = false; policy.UpdatePublicKey = fixture.Public; policy.UpdateAutoInstall = true;
+                Reject(() => WindowsReleaseSource.Validate(policy), "automatic installation still requires automatic checks");
+                policy.UpdateAutoInstall = false; policy.UpdateFeed = "http://example.test/feed.json";
+                Reject(() => WindowsReleaseSource.Validate(policy), "prepared source addresses must retain HTTPS");
             }
         }
         private static async Task UpdateTransportFeatures()

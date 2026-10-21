@@ -22,10 +22,12 @@ namespace CodexMeter.Windows
         public string Status { get; private set; }
         public event Action Changed;
         public WindowsUpdateService(Func<Settings> settings, bool preview, Action quit)
-        { this.settings = settings; this.preview = preview; this.quit = quit; Status = preview ? "预览模式不会访问更新源或安装。" : Configured ? "尚未检查更新。" : "尚未配置 Windows 更新源。"; }
-        public bool Configured { get { return !string.IsNullOrWhiteSpace(settings().UpdateFeed) && !string.IsNullOrWhiteSpace(settings().UpdatePublicKey); } }
+        { this.settings = settings; this.preview = preview; this.quit = quit; Status = preview ? "预览模式不会访问更新源或安装。" : Configured ? "尚未检查更新。" : UnconfiguredStatus(); }
+        public bool Configured { get { return WindowsReleaseSource.Configured(settings()); } }
+        private string UnconfiguredStatus()
+        { return !string.IsNullOrWhiteSpace(settings().UpdateFeed) && string.IsNullOrWhiteSpace(settings().UpdatePublicKey) ? "签名公钥尚未配置；可前往 GitHub 发行页下载。" : "请检查更新源、公钥及通道配置。"; }
         private static string Policy(Settings value) { return value.UpdateFeed + "\n" + value.UpdatePublicKey + "\n" + value.UpdateChannel; }
-        public void Reset() { Cancel(); Available = null; manifest = null; stage = null; fingerprint = null; nextAutomatic = DateTimeOffset.UtcNow.AddSeconds(30); Status = Configured ? "更新配置已保存。" : "尚未配置 Windows 更新源。"; Raise(); }
+        public void Reset() { Cancel(); Available = null; manifest = null; stage = null; fingerprint = null; nextAutomatic = DateTimeOffset.UtcNow.AddSeconds(30); Status = Configured ? "更新配置已保存。" : UnconfiguredStatus(); Raise(); }
         private void Raise() { var handler = Changed; if (handler != null) handler(); }
         public void Cancel() { if (operation != null) operation.Cancel(); }
         internal void Simulate(string state)

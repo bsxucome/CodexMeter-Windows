@@ -40,6 +40,17 @@ namespace CodexMeter.Core
             int targetLength, IntPtr version, IntPtr reserved, IntPtr sort);
         private const string Translations = @"额度与历史保存在本机；启用远程提醒后，所选服务只接收窗口名称和观测到的额度变化。本应用不复制登录凭据、不记录邮箱，也不收集分析数据。|Quota and history stay on this device. Enabled remote services receive only window names and observed quota changes. This app does not copy login credentials, record emails or collect analytics.
 原项目主页|Upstream project
+项目主页|Project home
+下载 Windows 版本|Download for Windows
+完成|Done
+使用 GitHub 更新源|Use GitHub update feed
+稳定版|Stable
+测试版|Beta
+默认从本项目 GitHub Releases 获取 Windows 签名清单，按通道与运行时分别更新。|The default source is this project's signed Windows manifests on GitHub Releases, separated by channel and runtime.
+签名更新需发行方发布清单并提供可信公钥。未配置公钥时，请通过“下载 Windows 版本”获取便携包。|Signed updates require a published manifest and a trusted public key from the publisher. Until a key is configured, use Download for Windows to get a portable package.
+签名公钥尚未配置；可前往 GitHub 发行页下载。|No signing public key configured. Download a portable package from GitHub Releases.
+请检查更新源、公钥及通道配置。|Check the update source, public key and channel settings.
+无法保存；请检查 HTTPS 地址与公钥。自动更新需有效公钥，自动安装需启用自动检查。|Cannot save. Check the HTTPS URL and public key. Automatic updates require a valid public key; automatic installation requires automatic checks.
 查看开源协议|View license
 打开本地数据目录|Open local data folder
 提醒五小时额度补充|Five-hour replenishment alerts

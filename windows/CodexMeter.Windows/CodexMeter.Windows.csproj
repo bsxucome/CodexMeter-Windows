@@ -10,7 +10,7 @@
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <AssemblyName>CodexMeter</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.7.5</Version>
+    <Version>0.7.6</Version>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../CodexMeter.Core/CodexMeter.Core.csproj" /></ItemGroup>

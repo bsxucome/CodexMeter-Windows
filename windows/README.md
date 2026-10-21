@@ -2,7 +2,7 @@
 
 [项目中文首页](https://github.com/bsxucome/CodexMeter-for-Windows#readme) · [English overview](https://github.com/bsxucome/CodexMeter-for-Windows/blob/main/README.en.md)
 
-0.7.5 统一各窗口的完整名称，修复双环重复显示及不完整布局回退，详情在显示前按目标屏幕 DPI 测量定位，并在双环移动时重新锚定。原生隔离回归与缩放几何检查已加入，真实任务栏点击及混合 DPI 环境仍需桌面验收。
+0.7.6 将项目主页与下载入口统一指向本仓库，预设 GitHub 签名更新地址，保留自定义源。正式清单与公钥尚待配置，自动更新默认关闭。包含 0.7.5 的完整名称、双环重复显示和首次弹窗定位修复；真实任务栏点击及混合 DPI 环境仍需桌面验收。
 
 设置页已隐藏右侧滚动条并保留滚动功能。“弹窗区域顺序”和“额度窗口显示与顺序”列表内可使用滚轮；内容无需内部滚动或已到边界时，滚轮继续滚动外层设置页。列表选择、排序操作与键盘翻页保持可用。
 
@@ -38,7 +38,7 @@
 - 更新辅助进程、真实 WPF 新版启动、启动失败重启旧版，以及篡改包拒绝，均有独立进程夹具验证；不触碰正式安装和用户数据。
 - 新增 GitHub 浏览器授权建仓脚本、干净源码 ZIP、官方 SDK／GitHub CLI 校验下载脚本、上游提交采集脚本。双运行时 CI 在版本标签上发布经过哈希检查的 Release，可用自有密钥附加签名更新源。
 
-双运行时托管构建和首个公开发行版已完成。真实 Explorer／多屏／系统投递、正常用户 DPAPI 与完整上游固定提交复核仍需对应环境验证，见 [ACCEPTANCE.md](ACCEPTANCE.md)。更新源与可信公钥仍为空；构建与发行证据见 [VERIFICATION.md](VERIFICATION.md)。
+双运行时托管构建和首个公开发行版已完成。真实 Explorer／多屏／系统投递、正常用户 DPAPI 与完整上游固定提交复核仍需对应环境验证，见 [ACCEPTANCE.md](ACCEPTANCE.md)。更新地址已预设为本项目 GitHub 源，但可信公钥仍为空，签名清单尚待上线；构建与发行证据见 [VERIFICATION.md](VERIFICATION.md)。
 
 ## v0.6.0 新增
 

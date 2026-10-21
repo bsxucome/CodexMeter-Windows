@@ -73,7 +73,7 @@ The [usage and build guide](windows/README.md) contains detailed configuration a
 
 The current target is **Windows 11 x64 with a horizontal primary taskbar**. The indicator is an independent transparent overlay. Mixed-DPI multi-monitor setups, auto-hide, and some shell interactions still require further desktop validation. ARM64 and WSL CLI are not supported.
 
-A configurable updater is implemented, but no production feed or trusted public key is configured. Download updates manually from Releases for now. Portable packages are not code-signed. See the [feature comparison](windows/PARITY.md) and [desktop acceptance checklist](windows/ACCEPTANCE.md) for details in Chinese.
+The in-app project home and Windows download links open this repository and its GitHub Releases. The updater defaults to this project's GitHub signed-manifest URL for stable/beta and both runtimes; existing custom feeds are preserved. Production signed manifests and a trusted public key are not yet available, so download updates manually from Releases for now. A preset URL does not enable automatic updates. Portable packages are not code-signed. See the [feature comparison](windows/PARITY.md) and [desktop acceptance checklist](windows/ACCEPTANCE.md) for details in Chinese.
 
 ## Documentation and feedback
 

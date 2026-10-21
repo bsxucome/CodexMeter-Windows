@@ -13,6 +13,32 @@ using System.Threading.Tasks;
 
 namespace CodexMeter.Core
 {
+    public static class WindowsReleaseSource
+    {
+        public const string ProjectHome = "https://github.com/bsxucome/CodexMeter-for-Windows";
+        public const string Releases = ProjectHome + "/releases";
+        public const string LatestRelease = Releases + "/latest";
+        public const string GitHubFeed = Releases + "/download/windows-update-feed/{channel}-{runtime}.json";
+        public const string UpstreamHome = "https://github.com/raycalrui/CodexMeter";
+
+        public static string DefaultFeed(string address, string publicKey)
+        { return string.IsNullOrWhiteSpace(address) && string.IsNullOrWhiteSpace(publicKey) ? GitHubFeed : address ?? ""; }
+        public static bool Configured(Settings value)
+        {
+            return !string.IsNullOrWhiteSpace(value.UpdateFeed) && !string.IsNullOrWhiteSpace(value.UpdatePublicKey);
+        }
+        public static void Validate(Settings value)
+        {
+            string address = value.UpdateFeed ?? "", key = value.UpdatePublicKey ?? "";
+            if (address.Length > 0)
+            {
+                SignedRelease.Https(address.Replace("{channel}", value.UpdateChannel).Replace("{runtime}", SignedRelease.CurrentRuntime));
+            }
+            if (key.Length > 0) { if (address.Length == 0) throw new ArgumentException(); SignedRelease.PublicKey(key); }
+            if ((value.UpdateAutomatic || value.UpdateAutoInstall) && !Configured(value)) throw new ArgumentException();
+            if (value.UpdateAutoInstall && !value.UpdateAutomatic) throw new ArgumentException();
+        }
+    }
     public sealed class ReleaseVersion : IComparable<ReleaseVersion>
     {
         private int major, minor, patch; private string[] prerelease;

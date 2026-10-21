@@ -70,7 +70,7 @@ namespace CodexMeter.Core
             HiddenWindows = new string[0]; WindowOrder = new string[0]; ShowWeeklyHistory = true; Appearance = new IndicatorAppearance();
             ShowCredits = true; ShowResetCredits = true; SectionOrder = ValidSections(null);
             NotifyLowQuota = true; NotifyOverPace = true; NotificationThreshold = 20; NotificationCooldownMinutes = 30;
-            UpdateFeed = ""; UpdatePublicKey = ""; UpdateChannel = "stable"; }
+            UpdateFeed = WindowsReleaseSource.GitHubFeed; UpdatePublicKey = ""; UpdateChannel = "stable"; }
         public Settings Copy()
         {
             var copy = (Settings)MemberwiseClone();
@@ -125,9 +125,10 @@ namespace CodexMeter.Core
                     NotificationThreshold = (int)Math.Max(1, Math.Min(99, Json.Number(json, "notificationThreshold") ?? 20)),
                     NotificationCooldownMinutes = (int)Math.Max(1, Math.Min(1440, Json.Number(json, "notificationCooldownMinutes") ?? 30)),
                     LaunchAtLogin = object.Equals(Json.Get(json, "launchAtLogin"), true),
-                    UpdateFeed = Bounded(Json.Text(json, "updateFeed")), UpdatePublicKey = Bounded(Json.Text(json, "updatePublicKey")),
+                    UpdateFeed = WindowsReleaseSource.DefaultFeed(Bounded(Json.Text(json, "updateFeed")), Bounded(Json.Text(json, "updatePublicKey"))), UpdatePublicKey = Bounded(Json.Text(json, "updatePublicKey")),
                     UpdateChannel = Json.Text(json, "updateChannel") == "beta" ? "beta" : "stable",
-                    UpdateAutomatic = object.Equals(Json.Get(json, "updateAutomatic"), true), UpdateAutoInstall = object.Equals(Json.Get(json, "updateAutoInstall"), true),
+                    UpdateAutomatic = !string.IsNullOrWhiteSpace(Json.Text(json, "updateFeed")) && object.Equals(Json.Get(json, "updateAutomatic"), true),
+                    UpdateAutoInstall = !string.IsNullOrWhiteSpace(Json.Text(json, "updateFeed")) && object.Equals(Json.Get(json, "updateAutoInstall"), true),
                     Appearance = IndicatorAppearance.FromJson(Json.Object(json, "appearance"))
                 };
             }

@@ -58,8 +58,17 @@ try {
     foreach ($name in @('Update.Check','Update.Download','Update.Install')) {
         if ((Element $about $name -ById).Current.IsEnabled) { throw 'Preview cannot check, download or install real updates.' }
     }
-    $null = Element $about 'Update.Feed' -ById
+    $null = Element $about 'Update.ProjectHome' -ById
+    $null = Element $about 'Update.Releases' -ById
+    $feed = (Element $about 'Update.Feed' -ById).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    if ($feed.Current.Value -ne 'https://github.com/bsxucome/CodexMeter-for-Windows/releases/download/windows-update-feed/{channel}-{runtime}.json') { throw 'Default feed must point to the project GitHub signed feed assets.' }
+    $feed.SetValue('https://example.test/custom.json')
+    (Element $about 'Update.UseGitHub' -ById).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    if ($feed.Current.Value -notlike 'https://github.com/bsxucome/CodexMeter-for-Windows/*') { throw 'GitHub source action did not restore the project source.' }
     $null = Element $about 'Update.PublicKey' -ById
+    Press $about '保存更新设置'
+    $null = Element $about '更新设置已保存。'
+    if ((Element $about 'Update.Check' -ById).Current.IsEnabled) { throw 'A prepared source without a public key must remain disabled.' }
     Press $about '模拟有更新'
     $null = Element $about '发现新版本：9.9.9 · 演示数据'
     if ((Element $about 'Update.Install' -ById).Current.IsEnabled) { throw 'Simulated updates must never become installable.' }

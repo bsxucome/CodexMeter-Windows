@@ -1,5 +1,9 @@
 # Windows 发行与更新接入
 
+## 0.7.6 项目主页与 GitHub 更新源
+
+“关于与更新”的项目主页、Windows 下载入口指向 bsxucome/CodexMeter-for-Windows，上游链接单独保留。默认更新地址与 Actions 的 windows-update-feed 资产同步机制对齐；保留自定义源、通道及公钥，不自动启用检查或安装。见 [0.7.6 发行说明](releases/0.7.6.md)。远程构建与新版本发布须另行确认。
+
 ## 0.7.5 任务栏与首次弹窗修复
 
 功能窗口统一完整项目名称；修复重复显示双环、任务栏测量回退跳动及首次弹窗定位，打开的详情跟随双环位置变化。见 [0.7.5 发行说明](releases/0.7.5.md)。版本与原有数据、文件名及更新标识保持兼容，已有标签不移动。新的远程构建与 Release 仍需成功运行后确认。
@@ -34,7 +38,7 @@
 
 [0.7.0 正式版已发布](https://github.com/bsxucome/CodexMeter-for-Windows/releases/tag/windows-v0.7.0)。`windows-v0.7.0` 对应提交 `0768290fbcd91c5ecfd6cd618ea948c09199bd57`；[标签构建及发版任务](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39246290825)已成功。两个运行时的 ZIP 和两份 SHA-256 文件均已上传，中文发行说明已包含在 Release 页面中。
 
-便携包已有独立 Windows 发行地址；签名更新源保持未配置，等待正式更新清单与可信签名公钥。程序不使用 raycalrui/CodexMeter 的 macOS 发行包。清单签名使用 RSA PKCS#1 SHA-256，和 Windows Authenticode 是两套独立机制：前者验证更新发布者，后者用于 Windows 对可执行文件的签名识别。
+便携包已有独立 Windows 发行地址；签名更新地址已预设为本仓库，等待正式更新清单与可信签名公钥上线。程序不使用 raycalrui/CodexMeter 的 macOS 发行包。清单签名使用 RSA PKCS#1 SHA-256，和 Windows Authenticode 是两套独立机制：前者验证更新发布者，后者用于 Windows 对可执行文件的签名识别。
 
 ## 构建
 
@@ -106,7 +110,9 @@ git push origin windows-v0.7.0
 
 标签必须与 `ProductVersion.Current` 一致。CI 重新构建／检查两种包；`publish-release.ps1` 逐一复核 ZIP 的 SHA-256，再发布版本资产，不覆盖已有版本 Release。版本说明从 `windows/releases/<版本>.md` 读取，再补充实际签名资产状态；`0.7.0.md` 已包含下载选择、功能和已知使用范围。没有更新私钥 secret 时只发布便携包，不提供签名更新源。
 
-如需更新源，在仓库 Actions secret `WINDOWS_UPDATE_PRIVATE_KEY_XML` 配置自己的 RSA 私钥。标签构建签名每个运行时的 Stable／Beta 清单及公钥，并同步到独立 `windows-update-feed` Release（不标记为 latest）。拟用地址为 `https://github.com/bsxucome/CodexMeter-for-Windows/releases/download/windows-update-feed/{channel}-{runtime}.json`；这只是上线后的目标，当前不可作为可用发行源。公钥仍需通过可信渠道手动配置；程序默认不会信任网上新出现的公钥。
+如需启用签名更新，在仓库 Actions secret `WINDOWS_UPDATE_PRIVATE_KEY_XML` 配置自己的 RSA 私钥。发行构建签名对应通道、每个运行时的清单及公钥，并同步到独立 `windows-update-feed` Release（不标记为 latest）。程序默认地址为 `https://github.com/bsxucome/CodexMeter-for-Windows/releases/download/windows-update-feed/{channel}-{runtime}.json`，与该同步机制一致；目前未配置正式密钥，预设地址不代表清单已上线。公钥仍需通过可信渠道手动配置；程序默认不会信任网上新出现的公钥。
+
+首次安装和旧版空地址使用该默认值，已有自定义地址、公钥及通道保持原值。“使用 GitHub 更新源”只修改待保存地址，保留通道与公钥；可先保存地址，但没有公钥时不能开启自动检查／自动安装。稳定版与测试版分别使用 stable-*／beta-* 资产，不依赖 latest 选择。不存在的资产不会回退到另一通道或绕过签名校验。手动下载可点击“下载 Windows 版本”。
 
 有代码签名证书后，设置进程环境变量 `CODEXMETER_PFX_PASSWORD`，再向构建脚本传入 `-SigningCertificatePath <本地PFX> -TimestampServer <证书供应商时间戳地址>`。签名发生在打包之前，仅签本项目 EXE 和 Core DLL；缺少证书时不伪造签名。证书和密码应存入 CI secrets，PFX 只落到临时目录并及时删除，不进入 artifacts。本环境无证书，签名步骤尚未实测。
 
