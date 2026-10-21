@@ -40,6 +40,8 @@ Advanced appearance shares the compact Settings layout, with a hidden scrollbar,
 
 Settings and management windows use muted surfaces, rounded fields and lists, soft selection colors, and clear primary actions in both themes. Ordering lists fit their content to reduce empty space.
 
+Functional windows display the full project name. The details panel is measured and positioned for its target screen before opening, and follows changes to the taskbar indicator's position.
+
 Credits, reset opportunities, and Token activity depend on account and API availability. Missing data is unavailable or omitted rather than displayed as zero. Remote reminders require explicit configuration and opt-in.
 
 ## Download and get started

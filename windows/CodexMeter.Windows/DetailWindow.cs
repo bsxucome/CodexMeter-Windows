@@ -6,6 +6,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using CodexMeter.Core;
 
@@ -22,30 +23,50 @@ namespace CodexMeter.Windows
         {
             this.refresh = refresh; this.settings = settings; this.history = history; this.quit = quit;
             this.weeklySamples = weeklySamples;
-            Title = "CodexMeter"; Width = 380; Height = preferredHeight; MinHeight = 240;
+            Title = L.ProductName; Width = 380; Height = preferredHeight; MinHeight = 240;
+            AutomationProperties.SetName(this, Title);
             WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false; Topmost = true;
             Background = Brushes.Transparent;
             UseLayoutRounding = true; SnapsToDevicePixels = true;
             FontFamily = new FontFamily("Segoe UI, Microsoft YaHei UI");
             TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
             PreviewKeyDown += (s, e) => { if (e.Key == Key.Escape) Hide(); };
+            Loaded += (s, e) => { UpdateLayout(); if (positionedAnchor.HasValue) PositionNearCursor(positionedAnchor); };
+        }
+        public void PrepareForOpen(System.Drawing.Point anchor)
+        {
+            positionedAnchor = anchor;
+            // Establish target-monitor DPI while hidden, before measuring or displaying content.
+            var handle = new WindowInteropHelper(this).EnsureHandle();
+            if (!IsVisible)
+            {
+                // A taskbar anchor is at the screen edge; a full-size hidden HWND there may mostly
+                // overlap a different monitor. Prime with a tiny rect entirely inside the target.
+                var work = System.Windows.Forms.Screen.FromPoint(anchor).WorkingArea;
+                MinHeight = 1; Width = 1; Height = 1;
+                TaskbarNative.MoveHidden(handle, work.Left + 8, work.Top + 8);
+                Width = 380;
+            }
         }
         public void PositionNearCursor(System.Drawing.Point? screenAnchor = null)
         {
-            var cursor = screenAnchor ?? System.Windows.Forms.Cursor.Position;
+            var cursor = screenAnchor ?? positionedAnchor ?? System.Windows.Forms.Cursor.Position;
             positionedAnchor = cursor;
             var area = System.Windows.Forms.Screen.FromPoint(cursor).WorkingArea;
-            var source = PresentationSource.FromVisual(this);
-            var fromDevice = source != null && source.CompositionTarget != null ?
-                source.CompositionTarget.TransformFromDevice : Matrix.Identity;
-            var topLeft = fromDevice.Transform(new Point(area.Left, area.Top));
-            var bottomRight = fromDevice.Transform(new Point(area.Right, area.Bottom));
-            var anchor = fromDevice.Transform(new Point(cursor.X, cursor.Y));
-            double above = Math.Max(0, anchor.Y - topLeft.Y - 16), below = Math.Max(0, bottomRight.Y - anchor.Y - 16);
-            bool onTop = above >= MinHeight || above >= below;
-            Height = Math.Min(preferredHeight, Math.Max(MinHeight, Math.Min(onTop ? above : below, bottomRight.Y - topLeft.Y - 20)));
-            Left = Math.Max(topLeft.X + 8, Math.Min(anchor.X - Width / 2, bottomRight.X - Width - 8));
-            Top = Math.Max(topLeft.Y + 8, Math.Min(onTop ? anchor.Y - Height - 8 : anchor.Y + 8, bottomRight.Y - Height - 8));
+            var handle = new WindowInteropHelper(this).EnsureHandle();
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                uint dpi = TaskbarNative.WindowDpi(handle);
+                double scale = dpi / 96.0;
+                MinHeight = Math.Min(240, Math.Max(1, area.Height / scale - 16));
+                var bounds = WindowGeometry.PlacePopup(new ScreenRect(area.Left, area.Top, area.Right, area.Bottom),
+                    cursor.X, cursor.Y, 380, preferredHeight, MinHeight, scale);
+                Width = (bounds.Right - bounds.Left) / scale; Height = (bounds.Bottom - bounds.Top) / scale;
+                Left = bounds.Left / scale; Top = bounds.Top / scale;
+                TaskbarNative.PlacePopup(handle, (int)Math.Round(bounds.Left), (int)Math.Round(bounds.Top),
+                    (int)Math.Round(bounds.Right - bounds.Left), (int)Math.Round(bounds.Bottom - bounds.Top));
+                if (TaskbarNative.WindowDpi(handle) == dpi) break;
+            }
         }
         public void Render(UsageState state, Settings configuration, bool preview)
         {
@@ -72,7 +93,7 @@ namespace CodexMeter.Windows
             reload.VerticalAlignment = VerticalAlignment.Top; DockPanel.SetDock(reload, Dock.Right);
             heading.Children.Add(reload);
             var titleGroup = new StackPanel();
-            var title = p.Label("CodexMeter", 14, p.Text); title.FontWeight = FontWeights.SemiBold;
+            var title = p.Label(L.ProductName, 14, p.Text); title.FontWeight = FontWeights.SemiBold;
             titleGroup.Children.Add(title);
             var account = p.Label(state.Plan, 11, p.Muted); account.Margin = new Thickness(0, 3, 0, 0);
             titleGroup.Children.Add(account); heading.Children.Add(titleGroup); header.Children.Add(heading);
@@ -218,9 +239,9 @@ namespace CodexMeter.Windows
             Grid.SetRow(footer, 2); layout.Children.Add(footer);
             L.Apply(this);
             shell.Measure(new Size(Width, double.PositiveInfinity));
-            preferredHeight = Math.Max(MinHeight, Math.Ceiling(shell.DesiredSize.Height));
-            Height = Math.Min(preferredHeight, SystemParameters.WorkArea.Height - 20);
-            if (IsVisible && positionedAnchor.HasValue) PositionNearCursor(positionedAnchor);
+            preferredHeight = Math.Max(240, Math.Ceiling(shell.DesiredSize.Height));
+            if (positionedAnchor.HasValue) PositionNearCursor(positionedAnchor);
+            else Height = Math.Min(preferredHeight, SystemParameters.WorkArea.Height - 20);
         }
         private static StackPanel CreditSection(CreditBalance credits, Palette p)
         {

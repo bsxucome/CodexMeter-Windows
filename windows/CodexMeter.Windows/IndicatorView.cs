@@ -101,11 +101,11 @@ namespace CodexMeter.Windows
             Width = Math.Ceiling(6 + row.ColumnDefinitions[0].Width.Value + numbers.Margin.Left +
                 (bars.Single ? 0 : Math.Max(percentage.DesiredSize.Width, caption.DesiredSize.Width)) + stale.DesiredSize.Width);
             surface.Background = preview && !transparentBackground ? p.Background : Brushes.Transparent;
-            ToolTip = selected == null ? "CodexMeter · " + (state.Error ?? state.Plan) :
+            ToolTip = selected == null ? L.ProductName + " · " + (state.Error ?? state.Plan) :
                 string.Format("{0} · 剩余 {1:0.#}%\n{2}\n点击展开；拖动调整位置", selected.Title, selected.RemainingPercent, selected.Countdown(now));
             AutomationProperties.SetHelpText(this, selected == null ? "等待额度数据" : selected.Title + "，剩余额度 " + percentage.Text);
             ToolTip = L.T((string)ToolTip);
-            AutomationProperties.SetName(this, L.T("CodexMeter 任务栏额度"));
+            AutomationProperties.SetName(this, L.T(L.ProductName + " 任务栏额度"));
             AutomationProperties.SetHelpText(this, L.T(AutomationProperties.GetHelpText(this)));
             AutomationProperties.SetAutomationId(this, "IndicatorStyle." + style);
         }

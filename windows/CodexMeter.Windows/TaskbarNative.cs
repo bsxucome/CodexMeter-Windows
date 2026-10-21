@@ -15,6 +15,12 @@ namespace CodexMeter.Windows
         public OccupiedSpan? StartButton;
         public uint Dpi = 96;
         public IntPtr Handle;
+        public bool Matches(TaskbarSnapshot other)
+        {
+            return other != null && Handle == other.Handle && Available == other.Available && Dpi == other.Dpi &&
+                Bounds.Left == other.Bounds.Left && Bounds.Top == other.Bounds.Top &&
+                Bounds.Right == other.Bounds.Right && Bounds.Bottom == other.Bounds.Bottom;
+        }
     }
     [StructLayout(LayoutKind.Sequential)]
     internal struct NativeRect
@@ -73,9 +79,9 @@ namespace CodexMeter.Windows
                     result.ControlsKnown = true;
                 }
             }
-            catch (ElementNotAvailableException) { }
-            catch (InvalidOperationException) { }
-            catch (COMException) { }
+            catch (ElementNotAvailableException) { result.ControlsKnown = false; }
+            catch (InvalidOperationException) { result.ControlsKnown = false; }
+            catch (COMException) { result.ControlsKnown = false; }
             if (tray == IntPtr.Zero)
                 result.Occupied.Add(new OccupiedSpan(result.Bounds.Right - 230 * result.Dpi / 96.0, result.Bounds.Right));
             return result;
@@ -84,6 +90,7 @@ namespace CodexMeter.Windows
         {
             var foreground = GetForegroundWindow();
             if (foreground == IntPtr.Zero) return false;
+            if (IsTaskbarWindow(foreground)) return false;
             var className = new StringBuilder(128);
             GetClassName(foreground, className, className.Capacity);
             string processName = null;
@@ -113,9 +120,66 @@ namespace CodexMeter.Windows
             long style = GetWindowLongPtr(handle, -20).ToInt64();
             SetWindowLongPtr(handle, -20, new IntPtr(style | 0x08000000L | 0x00000080L));
         }
+        public static uint WindowDpi(IntPtr handle)
+        {
+            try { uint dpi = GetDpiForWindow(handle); if (dpi > 0) return dpi; }
+            catch (EntryPointNotFoundException) { }
+            return 96;
+        }
+        public static void MoveHidden(IntPtr handle, int x, int y)
+        { SetWindowPos(handle, IntPtr.Zero, x, y, 0, 0, 0x0010 | 0x0001 | 0x0004); }
+        public static void PlacePopup(IntPtr handle, int x, int y, int width, int height)
+        { Position(handle, x, y, width, height, false); }
         public static void Place(IntPtr handle, int x, int y, int width, int height)
-        { SetWindowPos(handle, new IntPtr(-1), x, y, width, height, 0x0010 | 0x0040); }
+        {
+            Position(handle, x, y, width, height, true);
+            RestoreAboveTaskbar(handle);
+        }
+        private static void Position(IntPtr handle, int x, int y, int width, int height, bool topmost)
+        {
+            NativeRect current;
+            if (GetWindowRect(handle, out current) && current.Left == x && current.Top == y &&
+                current.Width == width && current.Height == height) return;
+            // Visibility belongs to WPF Show/Hide. Do not re-show a layered HWND on every placement tick.
+            SetWindowPos(handle, topmost ? new IntPtr(-1) : IntPtr.Zero, x, y, width, height, topmost ? 0x0010u : 0x0014u);
+        }
+        public static void RestoreAboveTaskbar(IntPtr handle)
+        {
+            NativeRect rect;
+            if (!IsWindowVisible(handle) || !GetWindowRect(handle, out rect)) return;
+            var point = new NativePoint { X = rect.Left + rect.Width / 2, Y = rect.Top + rect.Height / 2 };
+            if (IsTaskbarWindow(WindowFromPoint(point)))
+                SetWindowPos(handle, new IntPtr(-1), 0, 0, 0, 0, 0x0010 | 0x0001 | 0x0002);
+        }
+        private static bool IsTaskbarWindow(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero) return false;
+            var root = GetAncestor(handle, 2);
+            var name = new StringBuilder(128);
+            GetClassName(root == IntPtr.Zero ? handle : root, name, name.Capacity);
+            return name.ToString() == "Shell_TrayWnd" || name.ToString() == "Shell_SecondaryTrayWnd";
+        }
+        public static IDisposable WatchTaskbarForeground(Action changed) { return new ForegroundWatch(changed); }
+        private sealed class ForegroundWatch : IDisposable
+        {
+            private readonly WinEvent callback;
+            private IntPtr hook;
+            public ForegroundWatch(Action changed)
+            {
+                callback = (h, kind, window, idObject, idChild, thread, time) => {
+                    if (hook != IntPtr.Zero && IsTaskbarWindow(window)) changed();
+                };
+                hook = SetWinEventHook(3, 3, IntPtr.Zero, callback, 0, 0, 0);
+            }
+            public void Dispose() { if (hook == IntPtr.Zero) return; UnhookWinEvent(hook); hook = IntPtr.Zero; }
+        }
+        private delegate void WinEvent(IntPtr hook, uint kind, IntPtr window, int idObject, int idChild, uint thread, uint time);
+        [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X, Y; }
         public static bool TryGetBounds(IntPtr handle, out NativeRect rect) { return GetWindowRect(handle, out rect); }
+        [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr handle, uint flags);
+        [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(NativePoint point);
+        [DllImport("user32.dll")] private static extern IntPtr SetWinEventHook(uint first, uint last, IntPtr module, WinEvent callback, uint process, uint thread, uint flags);
+        [DllImport("user32.dll")] private static extern bool UnhookWinEvent(IntPtr hook);
         [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr handle, int attribute, out NativeRect rect, int size);
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
 

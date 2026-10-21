@@ -47,15 +47,15 @@ try {
     if ($invalid.ExitCode -ne 2) { throw 'Invalid instance fixture was accepted.' }
     [IO.File]::WriteAllText((Join-Path $fixture '.fixture'), 'CodexMeter.InstanceFixture.v1')
     $owned = Start-Process -FilePath $AppPath -ArgumentList $fixtureArguments -WindowStyle Hidden -PassThru
-    $details = Find-Window $owned.Id "CodexMeter"
+    $details = Find-Window $owned.Id "CodexMeter for Windows"
     Invoke-Button $details "设置"
-    $preferences = Find-Window $owned.Id "CodexMeter · 设置"
+    $preferences = Find-Window $owned.Id "CodexMeter for Windows · 设置"
     $preferences.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
     Write-Output "PASS settings opens and closes through accessibility controls"
     # Opening Settings may dismiss the popover. Reopen through the real indicator.
-    $meter = Find-Window $owned.Id 'CodexMeter 任务栏额度'
+    $meter = Find-Window $owned.Id 'CodexMeter for Windows 任务栏额度'
     $meter.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-    $details = Find-Window $owned.Id "CodexMeter"
+    $details = Find-Window $owned.Id "CodexMeter for Windows"
     $handle = [IntPtr]$details.Current.NativeWindowHandle
     $details.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
     Start-Sleep -Milliseconds 300
@@ -66,7 +66,7 @@ try {
     if (!$second.WaitForExit(5000)) { $second.Kill(); throw "Second instance failed to exit." }
     $second.Refresh()
     if ($second.ExitCode -ne 0) { throw "Second instance returned an error." }
-    $details = Find-Window $owned.Id "CodexMeter"
+    $details = Find-Window $owned.Id "CodexMeter for Windows"
     if (![UiSmokeNative]::IsWindowVisible($handle)) { throw 'Second instance did not show the existing popover.' }
     Write-Output "PASS isolated second instance restores existing details without production state"
     Invoke-Button $details "退出"
@@ -90,8 +90,8 @@ foreach ($process in $existing) {
 # Preview mode isolates UI interaction from real accounts and settings storage.
 $preview = Start-Process -FilePath $AppPath -ArgumentList "--preview","--dark" -WindowStyle Hidden -PassThru
 try {
-    $details = Find-Window $preview.Id "CodexMeter"
-    $meter = Find-Window $preview.Id "CodexMeter 任务栏额度"
+    $details = Find-Window $preview.Id "CodexMeter for Windows"
+    $meter = Find-Window $preview.Id "CodexMeter for Windows 任务栏额度"
     $texts = $meter.FindAll([System.Windows.Automation.TreeScope]::Descendants,
         (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty,
             [System.Windows.Automation.ControlType]::Text)))
@@ -100,7 +100,7 @@ try {
     if (!$hasPercent) { throw "Taskbar indicator does not expose its quota percentage." }
     Write-Output "PASS taskbar indicator displays live-format percentage in preview"
     Invoke-Button $details "设置"
-    $preferences = Find-Window $preview.Id "CodexMeter · 设置"
+    $preferences = Find-Window $preview.Id "CodexMeter for Windows · 设置"
     $dockingCondition = New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, "任务栏位置")),
         (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ComboBox)))
@@ -124,11 +124,11 @@ try {
     Start-Sleep -Milliseconds 400
     $condition = New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $preview.Id)),
-        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, "CodexMeter 任务栏额度")))
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, "CodexMeter for Windows 任务栏额度")))
     $remaining = [System.Windows.Automation.AutomationElement]::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Children, $condition)
     if ($remaining -and !$remaining.Current.IsOffscreen) { throw "Taskbar indicator remained visible after disabling it." }
     Write-Output "PASS taskbar visibility setting hides the indicator"
-    Invoke-Button (Find-Window $preview.Id "CodexMeter") "退出"
+    Invoke-Button (Find-Window $preview.Id "CodexMeter for Windows") "退出"
     if (!$preview.WaitForExit(5000)) { throw "Preview did not quit." }
     Write-Output "PASS taskbar preview exits without background windows"
 } finally {

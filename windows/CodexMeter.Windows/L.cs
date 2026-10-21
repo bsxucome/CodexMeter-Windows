@@ -10,6 +10,7 @@ namespace CodexMeter.Windows
 {
     internal static class L
     {
+        public const string ProductName = "CodexMeter for Windows";
         public static string Language = "zh-CN";
         public static string T(string value) { return TextCatalog.Transform(value, Language); }
         // Used on newly built control trees. Keep user-entered TextBox content untouched.

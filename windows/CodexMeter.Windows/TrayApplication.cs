@@ -117,7 +117,7 @@ namespace CodexMeter.Windows
                 menu.Items.Add("关于与更新", null, (s, e) => ShowAbout());
                 menu.Items.Add(new Forms.ToolStripSeparator());
                 menu.Items.Add("退出", null, (s, e) => Quit());
-                tray = new Forms.NotifyIcon { ContextMenuStrip = menu, Text = "CodexMeter · 正在连接" };
+                tray = new Forms.NotifyIcon { ContextMenuStrip = menu, Text = L.ProductName + " · 正在连接" };
                 tray.MouseClick += (s, e) => { if (e.Button == Forms.MouseButtons.Left) ShowDetails(); };
                 tray.BalloonTipClicked += (s, e) => ShowDetails();
                 UpdateTray(service.State);
@@ -129,6 +129,7 @@ namespace CodexMeter.Windows
             }
             indicator = new TaskbarIndicator(preview, ShowDetailsFromIndicator, ShowSettings, Quit, SaveTaskbarPosition,
                 preview && args.Contains("--smoke"));
+            indicator.PlacementChanged += () => { if (details.IsVisible) details.PositionNearCursor(indicator.PopupAnchor); };
             new WindowInteropHelper(indicator).EnsureHandle();
             Render();
             indicator.UpdatePlacement(configuration.TaskbarIndicator);
@@ -276,8 +277,10 @@ namespace CodexMeter.Windows
             presentation++;
             var state = preview ? previewState : service.State;
             if (settingsWarning != null && state.Error == null) state.Error = settingsWarning;
+            var point = anchor ?? System.Windows.Forms.Cursor.Position;
+            details.PrepareForOpen(point);
             details.Render(state, configuration, preview);
-            details.PositionNearCursor(anchor); details.Show(); details.Activate();
+            details.PositionNearCursor(point); details.UpdateLayout(); details.Show(); details.Activate();
             if (indicator != null) indicator.SetPopupVisible(true);
             if (!preview) service.SetVisible(true);
         }
@@ -365,8 +368,8 @@ namespace CodexMeter.Windows
                 if (icon != null) icon.Dispose();
                 icon = replacement; iconKey = key;
             }
-            string text = selected == null ? "CodexMeter · " + (state.Error ?? state.Plan) :
-                string.Format("CodexMeter · {0} 剩余 {1:0.#}%{2}\n更新 {3}", selected.Title, selected.RemainingPercent,
+            string text = selected == null ? L.ProductName + " · " + (state.Error ?? state.Plan) :
+                string.Format(L.ProductName + " · {0} 剩余 {1:0.#}%{2}\n更新 {3}", selected.Title, selected.RemainingPercent,
                     state.IsStale ? "（已过期）" : "", state.UpdatedAt.HasValue ? state.UpdatedAt.Value.ToLocalTime().ToString("HH:mm:ss") : "--");
             text = L.T(text); tray.Text = text.Length > 63 ? text.Substring(0, 63) : text;
         }
@@ -389,7 +392,7 @@ namespace CodexMeter.Windows
         private void TestNotification()
         {
             if (preview || quitting || tray == null) return;
-            tray.ShowBalloonTip(5000, "CodexMeter", L.T("这是一条测试通知；实际通知显示由 Windows 通知设置控制。"), Forms.ToolTipIcon.Info);
+            tray.ShowBalloonTip(5000, L.ProductName, L.T("这是一条测试通知；实际通知显示由 Windows 通知设置控制。"), Forms.ToolTipIcon.Info);
         }
         private static Icon CreateIcon(Attention state, bool stale, bool dark)
         {

@@ -16,7 +16,7 @@ function Select-Choice($Root, [string]$Id, [string]$Value) {
 $owned = Start-Process -FilePath $AppPath -ArgumentList '--preview','--dark','--history','--interaction-check' -WindowStyle Hidden -PassThru
 try {
     if (!$owned.WaitForInputIdle(15000)) { throw 'Advanced preview did not become input-idle before its readiness deadline.' }
-    $history = Owned-Window $owned.Id 'CodexMeter · 历史记录'
+    $history = Owned-Window $owned.Id 'CodexMeter for Windows · 历史记录'
     Select-Choice $history 'QuotaRange' '日历周'
     if ((Find-Element $history '下一期').Current.IsEnabled) { throw 'Calendar navigation crossed into a future week.' }
     if (!(Find-Element $history '上一期').Current.IsEnabled) { throw 'Previous retained week is not browsable.' }
@@ -37,16 +37,16 @@ try {
     $null = Find-Element $history 'ExhaustionEstimate' -ById
     Write-Output 'PASS independent token grouping and eligible exhaustion estimate'
     $history.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
-    $meter = Owned-Window $owned.Id 'CodexMeter 任务栏额度'
+    $meter = Owned-Window $owned.Id 'CodexMeter for Windows 任务栏额度'
     $meter.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-    $details = Owned-Window $owned.Id 'CodexMeter'
+    $details = Owned-Window $owned.Id 'CodexMeter for Windows'
     Write-Output ('Details reopened: HWND=' + $details.Current.NativeWindowHandle + '; offscreen=' + $details.Current.IsOffscreen)
     if (!(Find-ScrolledElement $details '每周额度历史' 'Detail.Scroll')) { throw 'Weekly chart was not reachable in the visible popup.' }
-    $widthBefore = (Owned-Window $owned.Id 'CodexMeter 任务栏额度').Current.BoundingRectangle.Width
+    $widthBefore = (Owned-Window $owned.Id 'CodexMeter for Windows 任务栏额度').Current.BoundingRectangle.Width
     Press $details '设置'
-    $settings = Owned-Window $owned.Id 'CodexMeter · 设置'
+    $settings = Owned-Window $owned.Id 'CodexMeter for Windows · 设置'
     Press $settings '高级外观…'
-    $appearance = Owned-Window $owned.Id 'CodexMeter · 高级外观'
+    $appearance = Owned-Window $owned.Id 'CodexMeter for Windows · 高级外观'
     Press $appearance '醒目'
     $ring = Find-Element $appearance '双环尺寸'
     $rangeValue = $ring.GetCurrentPattern([System.Windows.Automation.RangeValuePattern]::Pattern)
@@ -62,10 +62,10 @@ try {
     $weekly.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
     Press $settings '保存设置'
     Start-Sleep -Milliseconds 250
-    $meter = Owned-Window $owned.Id 'CodexMeter 任务栏额度'
+    $meter = Owned-Window $owned.Id 'CodexMeter for Windows 任务栏额度'
     $meter.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-    $details = Owned-Window $owned.Id 'CodexMeter'
-    $widthAfter = (Owned-Window $owned.Id 'CodexMeter 任务栏额度').Current.BoundingRectangle.Width
+    $details = Owned-Window $owned.Id 'CodexMeter for Windows'
+    $widthAfter = (Owned-Window $owned.Id 'CodexMeter for Windows 任务栏额度').Current.BoundingRectangle.Width
     if ($widthAfter -le $widthBefore) { throw 'Saved appearance did not resize the actual indicator.' }
     if (Find-ScrolledElement $details '每周额度历史' 'Detail.Scroll') { throw 'Weekly chart visibility did not update.' }
     Press $details '退出'

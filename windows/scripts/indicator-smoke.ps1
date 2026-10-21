@@ -12,7 +12,7 @@ $compiler = Join-Path $framework "csc.exe"
 $core = Join-Path (Split-Path $AppPath -Parent) "CodexMeter.Core.dll"
 Copy-Item -LiteralPath $core -Destination $testRoot -Force
 $probe = Join-Path $testRoot "IndicatorInput.Tests.exe"
-& $compiler /nologo /codepage:65001 /langversion:5 /warnaserror+ /platform:x64 /define:INDICATOR_INPUT_TEST /target:exe "/out:$probe" "/r:$core" /r:System.Drawing.dll /r:System.Xaml.dll "/r:$wpf/PresentationCore.dll" "/r:$wpf/PresentationFramework.dll" "/r:$wpf/WindowsBase.dll" (Join-Path $windowsRoot "CodexMeter.Tests/IndicatorInputProbe.cs")
+& $compiler /nologo /codepage:65001 /langversion:5 /warnaserror+ /platform:x64 /define:INDICATOR_INPUT_TEST /target:exe "/out:$probe" "/r:$core" /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Xaml.dll "/r:$wpf/PresentationCore.dll" "/r:$wpf/PresentationFramework.dll" "/r:$wpf/WindowsBase.dll" (Join-Path $windowsRoot "CodexMeter.Tests/IndicatorInputProbe.cs")
 if ($LASTEXITCODE -ne 0) { throw "Indicator input probe build failed." }
 if ($BaselinePath) {
     & $probe $BaselinePath --expect-holes
@@ -45,11 +45,11 @@ function Find-OwnedWindow([int]$Id, [string]$Name) {
 }
 $preview = Start-Process -FilePath $AppPath -ArgumentList "--preview","--interaction-check" -WindowStyle Hidden -PassThru
 try {
-    $indicator = Find-OwnedWindow $preview.Id "CodexMeter 任务栏额度"
+    $indicator = Find-OwnedWindow $preview.Id "CodexMeter for Windows 任务栏额度"
     $invoke = $indicator.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
     for ($round = 0; $round -lt 5; $round++) {
         $invoke.Invoke()
-        $details = Find-OwnedWindow $preview.Id "CodexMeter"
+        $details = Find-OwnedWindow $preview.Id "CodexMeter for Windows"
         Start-Sleep -Milliseconds 350
         $handle = [IntPtr]$details.Current.NativeWindowHandle
         if (![IndicatorSmokeNative]::IsWindowVisible($handle)) { throw "Details immediately dismissed after open." }
@@ -57,18 +57,18 @@ try {
         $details.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
         Start-Sleep -Milliseconds 200
         if ([IndicatorSmokeNative]::IsWindowVisible($handle)) { throw "Details failed to hide." }
-        $indicator = Find-OwnedWindow $preview.Id "CodexMeter 任务栏额度"
+        $indicator = Find-OwnedWindow $preview.Id "CodexMeter for Windows 任务栏额度"
         $preview.Refresh()
         if ($preview.HasExited) { throw "Application exited during repeated opening." }
     }
     Write-Output "PASS five real popup open/close cycles keep the indicator visible and do not overlap it"
     Write-Output "SKIP physical focus transitions: not simulated by these UI Automation checks."
     $invoke.Invoke()
-    $details = Find-OwnedWindow $preview.Id "CodexMeter"
+    $details = Find-OwnedWindow $preview.Id "CodexMeter for Windows"
     $handle = [IntPtr]$details.Current.NativeWindowHandle
     Start-Sleep -Milliseconds 1300
     if (![IndicatorSmokeNative]::IsWindowVisible($handle)) { throw "Reopened details disappeared." }
-    $null = Find-OwnedWindow $preview.Id "CodexMeter 任务栏额度"
+    $null = Find-OwnedWindow $preview.Id "CodexMeter for Windows 任务栏额度"
     Write-Output "PASS details reopen after dismissal and survive the next placement tick"
 } finally {
     $preview.Refresh()

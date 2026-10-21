@@ -31,7 +31,7 @@ namespace CodexMeter.Windows
         public HistoryWindow(HistoryStore history, bool preview, Func<UsageState> state, Func<Settings> settings)
         {
             this.history = history; this.preview = preview; readState = state; readSettings = settings;
-            Title = "CodexMeter · 历史记录"; Width = 900; Height = 800; MinWidth = 560; MinHeight = 480;
+            Title = L.ProductName + " · 历史记录"; Width = 900; Height = 800; MinWidth = 560; MinHeight = 480;
             WindowStartupLocation = WindowStartupLocation.CenterScreen; UseLayoutRounding = true;
             PreviewKeyDown += (s, e) => {
                 if (e.Key == Key.F11 || (fullScreen && e.Key == Key.Escape))

@@ -372,7 +372,7 @@ CSV 文件|CSV file
 尚无记录|No records yet
 悬停查看采样日期和数值；空白表示没有观测数据。|Hover to inspect samples. Blank areas have no observations.
 （服务日期）| (service date)
-CodexMeter 任务栏额度|CodexMeter taskbar quota
+任务栏额度|Taskbar quota
 等待额度数据|Waiting for quota data
 点击展开；拖动调整位置|Click to open; drag to move
 ，剩余额度 |, quota left 
@@ -398,7 +398,7 @@ Codex 无法访问用户主目录，请在正常 Windows 登录会话中运行�
 位置已临时调整，但没有保存设置的权限。|Position changed for this session. No permission to save it.
 位置已临时调整，但设置未能保存。|Position changed for this session, but could not be saved.
 设置文件无法读取，已使用默认设置。保存设置可修复此问题。|Cannot read settings. Defaults are in use; save settings to repair the file.
-CodexMeter 无法启动。请确认解压了完整文件夹，并检查本地设置目录是否可访问。|CodexMeter cannot start. Extract the complete folder and check access to the local settings directory.
+无法启动。请确认解压了完整文件夹，并检查本地设置目录是否可访问。|cannot start. Extract the complete folder and check access to the local settings directory.
 每周|Weekly
 额度窗口|Quota window
  小时后重置| h until reset

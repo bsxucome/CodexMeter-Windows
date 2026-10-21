@@ -21,7 +21,7 @@ namespace CodexMeter.Windows
             Theme.Surface = Palette.Brush(Theme.Dark ? "#323439" : "#ECEEF1");
             Theme.Line = Palette.Brush(Theme.Dark ? "#45484E" : "#D9DDE2");
             PreferencesStyles.Apply(this, Theme);
-            Title = "CodexMeter · " + L.T(title);
+            Title = L.ProductName + " · " + L.T(title);
             Width = 380; Height = Math.Min(700, SystemParameters.WorkArea.Height - 32); MinHeight = 360;
             WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false;
             WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = Theme.Background;
@@ -37,7 +37,7 @@ namespace CodexMeter.Windows
             var close = Theme.Button("×", (s, e) => Close()); close.Width = 26; close.MinHeight = 24; close.Padding = new Thickness(0); close.Margin = new Thickness(0);
             close.Background = Brushes.Transparent; close.BorderThickness = new Thickness(0);
             System.Windows.Automation.AutomationProperties.SetName(close, "关闭"); DockPanel.SetDock(close, Dock.Right); heading.Children.Add(close);
-            var titles = new StackPanel(); var name = Theme.Label("CodexMeter", 14, Theme.Text); name.FontWeight = FontWeights.SemiBold;
+            var titles = new StackPanel(); var name = Theme.Label(L.ProductName, 14, Theme.Text); name.FontWeight = FontWeights.SemiBold;
             titles.Children.Add(name); titles.Children.Add(Theme.Label(title, 11, Theme.Muted)); heading.Children.Add(titles); header.Children.Add(heading);
             header.Children.Add(Line(14, 12)); layout.Children.Add(header);
             heading.MouseLeftButtonDown += (s, e) => { if (e.OriginalSource is TextBlock) DragMove(); };

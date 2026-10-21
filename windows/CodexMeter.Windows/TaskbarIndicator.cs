@@ -27,24 +27,33 @@ namespace CodexMeter.Windows
         private double position = -1;
         private string dock = "Auto";
         private DateTime nextProbe = DateTime.MinValue;
+        private IDisposable foregroundWatch;
+        private NativeRect? placedBounds;
+        public event Action PlacementChanged;
         public TaskbarIndicator(bool preview, Action showDetails, Action openSettings, Action quit, Action<string, double> savePosition, bool solidPreview = false)
         {
             this.preview = preview; this.showDetails = showDetails; this.openSettings = openSettings;
             this.quit = quit; this.savePosition = savePosition;
             this.solidPreview = solidPreview;
-            Title = "CodexMeter 任务栏额度"; Width = 76; Height = 32;
+            Title = L.ProductName + " 任务栏额度"; Width = 76; Height = 32;
             UseLayoutRounding = true;
             ShowInTaskbar = false; ShowActivated = false; Topmost = true;
             WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
             // Alpha-zero pixels in a layered HWND pass clicks to Explorer before WPF hit testing.
             AllowsTransparency = true; Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
-            AutomationProperties.SetName(this, "CodexMeter 任务栏额度");
+            AutomationProperties.SetName(this, L.ProductName + " 任务栏额度");
             view = new IndicatorView(); surface = view.Surface; Content = view;
             SourceInitialized += (s, e) => {
                 var handle = new WindowInteropHelper(this).Handle;
                 TaskbarNative.SetNoActivate(handle);
                 HwndSource.FromHwnd(handle).AddHook(NoActivate);
+                if (!preview) foregroundWatch = TaskbarNative.WatchTaskbarForeground(() => {
+                    if (!stopped && !Dispatcher.HasShutdownStarted) Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => {
+                        if (!stopped && enabled && IsVisible) TaskbarNative.RestoreAboveTaskbar(handle);
+                    }));
+                });
             };
+            Closed += (s, e) => { if (foregroundWatch != null) { foregroundWatch.Dispose(); foregroundWatch = null; } };
             AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler(OnDragStart), true);
             AddHandler(UIElement.PreviewMouseMoveEvent, new MouseEventHandler(OnDragMove), true);
             AddHandler(UIElement.PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler(OnDragEnd), true);
@@ -61,7 +70,7 @@ namespace CodexMeter.Windows
         {
             if (!gesture.IsPressed) { position = settings.TaskbarPosition; dock = settings.TaskbarDock; }
             view.Render(state, settings, preview, !solidPreview); Width = view.Width; ToolTip = view.ToolTip;
-            Title = L.T("CodexMeter 任务栏额度"); AutomationProperties.SetName(this, Title);
+            Title = L.T(L.ProductName + " 任务栏额度"); AutomationProperties.SetName(this, Title);
             AutomationProperties.SetHelpText(this, AutomationProperties.GetHelpText(view));
             AutomationProperties.SetAutomationId(this, "IndicatorStyle." + Settings.ValidStyle(settings.IndicatorStyle));
         }
@@ -74,6 +83,7 @@ namespace CodexMeter.Windows
             if (preview)
             {
                 if (!IsVisible) { Left = SystemParameters.WorkArea.Right - Width - 24; Top = SystemParameters.WorkArea.Bottom - Height - 12; Show(); }
+                NotifyPlacement();
                 return;
             }
             // Native bounds remain responsive even when Explorer's UI Automation provider stalls.
@@ -90,10 +100,7 @@ namespace CodexMeter.Windows
                 {
                     var measured = await Task.Run(() => TaskbarNative.Read());
                     var current = TaskbarNative.Read(false);
-                    if (measured.Handle == current.Handle && measured.Available == current.Available &&
-                        measured.Bounds.Left == current.Bounds.Left && measured.Bounds.Top == current.Bounds.Top &&
-                        measured.Bounds.Right == current.Bounds.Right && measured.Bounds.Bottom == current.Bounds.Bottom && measured.Dpi == current.Dpi)
-                        snapshot = measured;
+                    AcceptMeasurement(measured, current);
                 }
                 catch (Exception ex) { if (ex is OutOfMemoryException) throw; }
                 finally { probing = false; nextProbe = DateTime.UtcNow.AddSeconds(3); }
@@ -106,6 +113,12 @@ namespace CodexMeter.Windows
             if (stopped) return;
             snapshot = null; nextProbe = DateTime.MinValue;
             UpdatePlacement(enabled);
+        }
+        internal bool AcceptMeasurement(TaskbarSnapshot measured, TaskbarSnapshot current)
+        {
+            // A failed/partial Explorer probe must not erase a stable occupied-slot measurement.
+            if (!measured.ControlsKnown || !measured.Matches(current)) return false;
+            snapshot = measured; return true;
         }
         private void Place(bool duringDrag = false)
         {
@@ -133,8 +146,25 @@ namespace CodexMeter.Windows
                     bounds.Right - width - (int)(240 * scale);
             int x = left.HasValue ? (int)left.Value : Math.Max(bounds.Left + 2, Math.Min(bounds.Right - width - 2, fallback));
             int y = left.HasValue ? bounds.Top + (bounds.Height - height) / 2 : bounds.Top - height - 4;
-            if (!IsVisible) Show();
-            TaskbarNative.Place(new WindowInteropHelper(this).Handle, Math.Max(bounds.Left, x), y, width, height);
+            x = Math.Max(bounds.Left, x);
+            var handle = new WindowInteropHelper(this).EnsureHandle();
+            if (!IsVisible)
+            {
+                Left = x / scale; Top = y / scale; Height = height / scale;
+                TaskbarNative.Place(handle, x, y, width, height);
+                Show();
+            }
+            TaskbarNative.Place(handle, x, y, width, height);
+            NotifyPlacement();
+        }
+        private void NotifyPlacement()
+        {
+            NativeRect current;
+            if (!IsVisible || !TaskbarNative.TryGetBounds(new WindowInteropHelper(this).Handle, out current)) return;
+            bool changed = !placedBounds.HasValue || current.Left != placedBounds.Value.Left || current.Top != placedBounds.Value.Top ||
+                current.Right != placedBounds.Value.Right || current.Bottom != placedBounds.Value.Bottom;
+            placedBounds = current;
+            if (changed && PlacementChanged != null) PlacementChanged();
         }
         private void OnDragStart(object sender, MouseButtonEventArgs e)
         {

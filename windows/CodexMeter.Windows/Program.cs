@@ -63,8 +63,8 @@ namespace CodexMeter.Windows
                 }
                 catch (Exception)
                 {
-                    MessageBox.Show("CodexMeter 无法启动。请确认解压了完整文件夹，并检查本地设置目录是否可访问。",
-                        "CodexMeter", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(L.T(L.ProductName + " 无法启动。请确认解压了完整文件夹，并检查本地设置目录是否可访问。"),
+                        L.ProductName, MessageBoxButton.OK, MessageBoxImage.Error);
                     return 1;
                 }
                 finally { singleton.ReleaseMutex(); }

@@ -12,6 +12,25 @@ namespace CodexMeter.Tests
         private const string AllowanceJson = "{\"rateLimits\":{\"credits\":{\"hasCredits\":true,\"unlimited\":false,\"balance\":\"25.50\"}},\"rateLimitResetCredits\":{\"availableCount\":3,\"credits\":[{\"id\":\"one\",\"resetType\":\"codexRateLimits\",\"status\":\"available\",\"grantedAt\":1000,\"expiresAt\":2000},{\"id\":\"one\",\"status\":\"available\"},{\"id\":\"used\",\"resetType\":\"codexRateLimits\",\"status\":\"redeemed\"}]}}";
         private static void SystemFeatures()
         {
+            foreach (double scale in new[] { 1.0, 1.25, 1.5, 2.0 })
+            {
+                var area = new ScreenRect(-1920 * scale, 0, 0, 1032 * scale);
+                var popup = WindowGeometry.PlacePopup(area, -420 * scale, 1032 * scale, 380, 900, 240, scale);
+                Check(Math.Abs(popup.Right - popup.Left - 380 * scale) < .01 && popup.Left >= area.Left + 8 * scale &&
+                    popup.Top >= area.Top + 8 * scale && popup.Right <= area.Right - 8 * scale && popup.Bottom <= 1024 * scale,
+                    "first popup physical bounds fit the target work area at scale " + scale);
+            }
+            var nearTop = WindowGeometry.PlacePopup(new ScreenRect(0, 0, 1920, 1032), 12, 12, 380, 700, 240, 1);
+            Check(nearTop.Left == 8 && nearTop.Top >= 20 && nearTop.Bottom <= 1024, "popup near the top-left cursor opens below without leaving the work area");
+            var shortPopup = WindowGeometry.PlacePopup(new ScreenRect(0, 0, 320, 220), 319, 219, 380, 900, 240, 1);
+            Check(shortPopup.Left >= 8 && shortPopup.Top >= 8 && shortPopup.Right <= 312 && shortPopup.Bottom <= 212,
+                "short and narrow target work areas bound the popup instead of clipping it");
+            Check(WindowGeometry.IsShellSurface("Shell_SecondaryTrayWnd", "explorer") &&
+                WindowGeometry.IsShellSurface("Windows.UI.Composition.DesktopWindowContentBridge", "explorer"),
+                "taskbar and Explorer shell islands do not masquerade as fullscreen applications");
+            Check(!WindowGeometry.IsShellSurface("CabinetWClass", "explorer") &&
+                !WindowGeometry.IsShellSurface("Windows.UI.Composition.DesktopWindowContentBridge", "ExamplePlayer"),
+                "ordinary Explorer and other application windows retain fullscreen detection");
             var data = Json.Parse(AllowanceJson);
             var credits = CreditBalance.Parse(data); var resets = ResetCredits.Parse(data);
             Check(credits.Balance == "25.50" && credits.HasCredits == true && credits.Unlimited == false, "optional balance retains exact service decimal and flags");
