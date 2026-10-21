@@ -15,11 +15,12 @@ An independent Windows implementation inspired by [raycalrui/CodexMeter](https:/
 ## Preview
 
 <p>
-  <img src="docs/images/main-light.png" width="300" alt="Light quota panel with remaining quota, time, and usage history" />
-  <img src="docs/images/settings-dark.png" width="300" alt="Dark settings window with taskbar, content, and language options" />
+  <img src="docs/images/main-light.png" width="260" alt="Light quota panel with remaining quota, time, and usage history" />
+  <img src="docs/images/settings-light.png" width="260" alt="Light settings window with taskbar, content, and language options" />
+  <img src="docs/images/appearance-light.png" width="260" alt="Light advanced appearance settings with ring preview, presets, and size controls" />
 </p>
 
-*Screenshots use demonstration data. Available metrics depend on your Codex account and service responses.*
+*The three light-theme screenshots show the main panel, Settings, and Advanced Appearance using demonstration data. Available metrics depend on your Codex account and service responses.*
 
 ## Features
 

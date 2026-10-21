@@ -6,6 +6,8 @@
 
 ## Provenance records
 
+Documentation preview refresh, 2026-10-21: both README entries now show light-theme main, Settings and Advanced Appearance screenshots captured serially from the 0.7.6 isolated smoke preview. All three were visually inspected. No application logic, version or upstream scope changes.
+
 Windows CI follow-up, 2026-10-21: main run 39615050341 failed in the 0.7.6 release UI smoke immediately after InvokePattern.Invoke. Source checks now wait for the exact value with a bounded deadline and fresh providers, and reuse existing owned-window/control readiness. An owned delayed WPF fixture covers stale reads, provider replacement, wrong values and missing controls. This changes validation scripts only; no updater trust policy or upstream functionality changes. Keep the unpublished 0.7.6 version and existing tags.
 
 Windows update-source follow-up, 2026-10-21: 0.7.6 links the project home and manual Windows downloads to bsxucome/CodexMeter-for-Windows, retaining separate upstream attribution. New and empty feed settings use that repository's existing windows-update-feed release asset layout for both channels/runtimes; custom sources and trust remain unchanged. A source can be saved before its public key, but cannot enable automatic updates. No production key is invented or downloaded as trust; signed manifests still require publisher setup. This is Windows integration, not an upstream parity claim.

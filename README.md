@@ -15,11 +15,12 @@ CodexMeter for Windows 是一款面向 **Windows 11 x64** 的 Codex 额度监控
 ## 界面预览
 
 <p>
-  <img src="docs/images/main-light.png" width="300" alt="浅色主面板：额度、剩余时间与使用记录" />
-  <img src="docs/images/settings-dark.png" width="300" alt="深色设置页：任务栏显示、内容与语言设置" />
+  <img src="docs/images/main-light.png" width="260" alt="浅色主面板：额度、剩余时间与使用记录" />
+  <img src="docs/images/settings-light.png" width="260" alt="浅色设置页：任务栏显示、内容与语言设置" />
+  <img src="docs/images/appearance-light.png" width="260" alt="浅色高级外观设置页：双环预览、外观预设与图形尺寸调整" />
 </p>
 
-*截图使用演示数据，展示主面板与设置页；实际额度以你的 Codex 账号返回的数据为准。*
+*三张浅色截图依次展示主面板、设置与高级外观，均使用演示数据；实际额度以你的 Codex 账号返回的数据为准。*
 
 ## 主要功能
 

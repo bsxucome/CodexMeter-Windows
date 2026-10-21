@@ -1,5 +1,9 @@
 # Verification — Windows v0.7.6
 
+## GitHub 首页浅色配图（2026-10-21）
+
+中英文 README 统一展示浅色主面板、设置与新增的高级外观三张图，均由现有 0.7.6 Framework 程序的 --smoke 隔离预览串行生成并逐张查看。图中为演示数据，未读取生产账号或停止用户实例；没有修改应用功能或版本号。旧深色设置配图移除。图片引用与源码空白检查通过；远程页面更新仍需成功推送后确认。
+
 ## 0.7.6 Actions 界面回归时序修复（2026-10-21）
 
 用户会话采集的 main 运行 [39615050341](https://github.com/bsxucome/CodexMeter-for-Windows/actions/runs/39615050341) 对应 b83d8fd8eaf39a9efc2002dd59abe134d5d8fe40，Framework 在 release-smoke.ps1 的 GitHub 源恢复断言失败：Invoke 后立即读取旧值。微软 [InvokePattern.Invoke 说明](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.invokepattern.invoke) 表明调用应立即返回，不能把返回当作点击处理完成。之前的本地通过不代表无此时序竞争；该 main 失败阻止了标签及正式发行，不能视为 0.7.6 已发布。
