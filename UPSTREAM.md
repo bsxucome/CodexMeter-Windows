@@ -6,6 +6,8 @@
 
 ## Provenance records
 
+Documentation taskbar illustration, 2026-10-22: both README entries include a light taskbar illustration with the actual IndicatorView for all five styles and fixed 74% quota / 64% time demonstration values. The surrounding taskbar/icons are synthetic and labeled as illustrative; no desktop, account, preferences or history data is captured. This documents Windows UI options, not physical Explorer acceptance or upstream parity.
+
 Windows portable packaging follow-up, 2026-10-22: 0.7.7 publishes the recommended .NET 10 build as a self-contained single executable with native-library extraction, without trimming or bundle compression. Portable documentation moves under docs with a bilingual quick-start file at the root; Framework retains its required DLL/config. Signed manifests continue to enforce exact files/hashes and runtime identity, while allowing .NET single-file and legacy multi-file layouts. First-time migration from older updaters requires manual download. This changes Windows delivery and validation, not upstream parity; hosted single-file acceptance is reported separately from local Framework results.
 
 Documentation preview refresh, 2026-10-21: both README entries now show light-theme main, Settings and Advanced Appearance screenshots captured serially from the 0.7.6 isolated smoke preview. All three were visually inspected. No application logic, version or upstream scope changes.

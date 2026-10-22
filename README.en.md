@@ -15,6 +15,12 @@ An independent Windows implementation inspired by [raycalrui/CodexMeter](https:/
 ## Preview
 
 <p>
+  <img src="docs/images/taskbar-light.png" width="820" alt="Light taskbar illustration showing quota/time rings and four alternative indicator styles, using demonstration data only" />
+</p>
+
+*The taskbar layout is illustrative. Indicators use the application's actual controls with fixed demo values of 74% quota and 64% time. The artwork contains no real account information, desktop content, or local paths.*
+
+<p>
   <img src="docs/images/main-light.png" width="260" alt="Light quota panel with remaining quota, time, and usage history" />
   <img src="docs/images/settings-light.png" width="260" alt="Light settings window with taskbar, content, and language options" />
   <img src="docs/images/appearance-light.png" width="260" alt="Light advanced appearance settings with ring preview, presets, and size controls" />
