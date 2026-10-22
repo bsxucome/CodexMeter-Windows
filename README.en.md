@@ -51,7 +51,7 @@ Open **[the latest release](https://github.com/bsxucome/CodexMeter-for-Windows/r
 
 | Package suffix | Requirements |
 | --- | --- |
-| `dotnet10-x64.zip` | **Recommended**: includes the .NET runtime; no separate .NET installation needed. |
+| `dotnet10-x64.zip` | **Recommended**: a self-contained single executable; no separate .NET installation needed. |
 | `framework-x64.zip` | Smaller download; requires .NET Framework 4.8 or later. |
 
 1. Install the native Windows Codex CLI and sign in using `codex login`.
@@ -60,6 +60,8 @@ Open **[the latest release](https://github.com/bsxucome/CodexMeter-for-Windows/r
 4. Choose your quota window, indicator style, language, and reminder preferences.
 
 Each archive has a SHA-256 companion file. To upgrade, exit the old version and extract the new package into a separate folder. Preferences and history remain in the current user's local application data directory.
+
+Starting with 0.7.7, the recommended archive contains only `CodexMeter.exe`, a bilingual `使用说明.txt` quick-start file, and a `docs` folder at the top level. Run the EXE to start. Keep the additional DLL and configuration file in the Framework package. The single executable still includes the runtime and may extract native dependencies into the system temporary folder on first launch. Download manually when first switching from an older version.
 
 The [usage and build guide](windows/README.md) contains detailed configuration and source build instructions in Chinese.
 

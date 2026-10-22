@@ -77,6 +77,7 @@ jobs:
           ./windows/scripts/github-page-smoke.ps1
           ./windows/scripts/actions-release-smoke.ps1
           ./windows/scripts/actions-signing-smoke.ps1
+          ./windows/scripts/portable-package-smoke.ps1
           ./windows/scripts/update-process-smoke.ps1
           ./windows/scripts/ui-smoke.ps1
           ./windows/scripts/indicator-smoke.ps1
@@ -85,6 +86,21 @@ jobs:
           ./windows/scripts/ui-readiness-smoke.ps1
           ./windows/scripts/advanced-smoke.ps1
           ./windows/scripts/release-smoke.ps1
+      - name: 验证实际便携包与解压启动
+        shell: powershell
+        env:
+          BUILD_RUNTIME: ${{ matrix.runtime }}
+        run: ./windows/scripts/verify-package.ps1 -Runtime $env:BUILD_RUNTIME
+      - name: 单文件版界面与更新进程回归
+        if: matrix.runtime == 'DotNet'
+        shell: powershell
+        run: |
+          $published = @(Get-ChildItem ./windows/artifacts -Directory -Filter 'publish-dotnet-*')
+          if ($published.Count -ne 1) { throw 'Expected one fresh single-file publish directory.' }
+          $app = Join-Path $published[0].FullName 'CodexMeter.exe'
+          $tests = (Resolve-Path ./windows/CodexMeter.Tests/bin/Release/net10.0-windows/CodexMeter.Tests.dll).Path
+          ./windows/scripts/update-process-smoke.ps1 -AppPath $app -TestPath $tests -Runtime DotNet
+          ./windows/scripts/release-smoke.ps1 -AppPath $app
       - name: 签署更新清单（需配置签名密钥）
         if: needs.plan.outputs.publish == 'true' && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/windows-v')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release'))
         shell: powershell

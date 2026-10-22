@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory=$true)][string]$Directory,
     [Parameter(Mandatory=$true)][string]$CertificatePath,
-    [Parameter(Mandatory=$true)][string]$TimestampServer
+    [Parameter(Mandatory=$true)][string]$TimestampServer,
+    [ValidateSet('Framework','DotNet')][string]$Runtime = 'Framework'
 )
 $ErrorActionPreference = 'Stop'
 $address = [Uri]$TimestampServer
@@ -12,7 +13,8 @@ $certificate = New-Object Security.Cryptography.X509Certificates.X509Certificate
     [Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet)
 try {
     if (!$certificate.HasPrivateKey) { throw 'The code signing certificate has no private key.' }
-    foreach ($name in @('CodexMeter.exe', 'CodexMeter.Core.dll')) {
+    $files = if ($Runtime -eq 'Framework') { @('CodexMeter.exe', 'CodexMeter.Core.dll') } else { @('CodexMeter.exe') }
+    foreach ($name in $files) {
         $path = Join-Path $Directory $name
         $result = Set-AuthenticodeSignature -LiteralPath $path -Certificate $certificate -HashAlgorithm SHA256 -TimestampServer $TimestampServer
         if ($result.Status -ne 'Valid') { throw "Authenticode validation failed for $name." }

@@ -136,7 +136,8 @@ namespace CodexMeter.Core
                 if (total > 1073741824) throw new InvalidDataException("更新包解压后过大。");
                 result.Files.Add(new ReleaseFile { Path = name, Size = size, Sha256 = Hash(file, "sha256") });
             }
-            if (!names.Contains("CodexMeter.exe") || !names.Contains("CodexMeter.Core.dll")) throw new InvalidDataException("更新包缺少 Windows 程序文件。");
+            if ((runtime != "framework-x64" && runtime != "dotnet10-x64") || !names.Contains("CodexMeter.exe") ||
+                (runtime == "framework-x64" && !names.Contains("CodexMeter.Core.dll"))) throw new InvalidDataException("更新包缺少 Windows 程序文件。");
             return result;
         }
         private static string Hash(Dictionary<string, object> data, string key)

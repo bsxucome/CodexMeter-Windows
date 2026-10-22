@@ -10,8 +10,10 @@
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <AssemblyName>CodexMeter</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.7.6</Version>
+    <Version>0.7.7</Version>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
+  <!-- App.config configures only the separately compiled Framework compatibility build. -->
+  <ItemGroup><None Remove="App.config" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../CodexMeter.Core/CodexMeter.Core.csproj" /></ItemGroup>
 </Project>

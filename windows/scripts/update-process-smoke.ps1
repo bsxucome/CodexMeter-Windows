@@ -1,8 +1,11 @@
 ﻿param(
     [string]$AppPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts/CodexMeter-framework-x64/CodexMeter.exe'),
-    [string]$TestPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts/CodexMeter-framework-x64/CodexMeter.Tests.exe')
+    [string]$TestPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts/CodexMeter-framework-x64/CodexMeter.Tests.exe'),
+    [ValidateSet('Framework','DotNet')][string]$Runtime = 'Framework'
 )
 $ErrorActionPreference = 'Stop'
+$runtimeName = if ($Runtime -eq 'Framework') { 'framework-x64' } else { 'dotnet10-x64' }
+$applicationFiles = if ($Runtime -eq 'Framework') { @('CodexMeter.exe','CodexMeter.Core.dll','CodexMeter.exe.config') } else { @('CodexMeter.exe') }
 $fixtureRoot = [IO.Path]::GetFullPath((Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts/test-data'))
 [IO.Directory]::CreateDirectory($fixtureRoot) | Out-Null
 foreach ($scenario in @('success','startup-failure','tampered')) {
@@ -12,22 +15,22 @@ foreach ($scenario in @('success','startup-failure','tampered')) {
     $encoding = New-Object Text.UTF8Encoding($false)
     [IO.File]::WriteAllText((Join-Path $directory '.fixture'), 'CodexMeter.UpdateFixture.v1', $encoding)
     [IO.File]::WriteAllText((Join-Path $directory 'startup-mode'), $(if ($scenario -eq 'startup-failure') { 'fail' } else { 'success' }), $encoding)
-    $oldDirectory = Join-Path $directory 'old'
+    $oldDirectory = Join-Path $directory '旧版 old'
     [IO.Directory]::CreateDirectory($oldDirectory) | Out-Null
     $appDirectory = Split-Path ([IO.Path]::GetFullPath($AppPath)) -Parent
-    foreach ($name in @('CodexMeter.exe','CodexMeter.Core.dll','CodexMeter.exe.config')) { Copy-Item -LiteralPath (Join-Path $appDirectory $name) -Destination $oldDirectory }
+    foreach ($name in $applicationFiles) { Copy-Item -LiteralPath (Join-Path $appDirectory $name) -Destination $oldDirectory }
     $old = Join-Path $oldDirectory 'CodexMeter.exe'
     $oldHash = (Get-FileHash -LiteralPath $old -Algorithm SHA256).Hash
     try {
-        & $TestPath --release-script-fixture $directory
+        if ([IO.Path]::GetExtension($TestPath) -eq '.dll') { & dotnet $TestPath --release-script-fixture $directory } else { & $TestPath --release-script-fixture $directory }
         if ($LASTEXITCODE -ne 0) { throw 'Fixture key generation failed.' }
         $stage = [Guid]::NewGuid().ToString('N')
         $staging = Join-Path $directory "updates/staging/$stage"
         [IO.Directory]::CreateDirectory($staging) | Out-Null
         $archive = Join-Path $staging 'package.zip'
-        Compress-Archive -LiteralPath @((Join-Path $oldDirectory 'CodexMeter.exe'),(Join-Path $oldDirectory 'CodexMeter.Core.dll'),(Join-Path $oldDirectory 'CodexMeter.exe.config')) -DestinationPath $archive
-        & (Join-Path $PSScriptRoot 'sign-release.ps1') -Archive $archive -Version 9.9.9 -Channel stable -Runtime framework-x64 -PackageUrl 'https://example.test/fixture.zip' -PrivateKeyFile (Join-Path $directory 'TEST-ONLY-private.xml') -OutputDirectory $directory
-        Copy-Item -LiteralPath (Join-Path $directory 'stable-framework-x64.json') -Destination (Join-Path $staging 'manifest.json')
+        Compress-Archive -LiteralPath @($applicationFiles | ForEach-Object { Join-Path $oldDirectory $_ }) -DestinationPath $archive
+        & (Join-Path $PSScriptRoot 'sign-release.ps1') -Archive $archive -Version 9.9.9 -Channel stable -Runtime $runtimeName -PackageUrl 'https://example.test/fixture.zip' -PrivateKeyFile (Join-Path $directory 'TEST-ONLY-private.xml') -OutputDirectory $directory
+        Copy-Item -LiteralPath (Join-Path $directory ("stable-$runtimeName.json")) -Destination (Join-Path $staging 'manifest.json')
         $settings = @{ updatePublicKey=[IO.File]::ReadAllText((Join-Path $directory 'public-key.json')); updateChannel='stable'; updateFeed='https://example.test/fixture.json' } | ConvertTo-Json -Compress
         [IO.File]::WriteAllText((Join-Path $directory 'settings.json'), $settings, $encoding)
         if ($scenario -eq 'tampered') {
@@ -36,13 +39,16 @@ foreach ($scenario in @('success','startup-failure','tampered')) {
         }
         $arguments = '--install-fixture "' + $directory + '" ' + $stage
         $parent = Start-Process -FilePath $old -ArgumentList $arguments -WindowStyle Hidden -PassThru
-        if (!$parent.WaitForExit(75000)) { $parent.Kill(); throw 'Fixture parent timed out.' }
+        try {
+            if (!$parent.WaitForExit(75000)) { $parent.Kill(); $null = $parent.WaitForExit(5000); throw 'Fixture parent timed out.' }
+            $parentExit = $parent.ExitCode
+        } finally { $parent.Dispose() }
         if ($scenario -eq 'tampered') {
-            if ($parent.ExitCode -eq 0) { throw 'Tampered archive reached a successful handoff.' }
+            if ($parentExit -eq 0) { throw 'Tampered archive reached a successful handoff.' }
             if (@(Get-ChildItem -LiteralPath $directory -Directory -Filter 'CodexMeter-Windows-*').Count) { throw 'Tampered archive created an installation.' }
             Write-Output 'PASS real update helper rejects tampering before parent handoff'
         } else {
-            if ($parent.ExitCode -ne 0) { throw 'Fixture helper preparation failed.' }
+            if ($parentExit -ne 0) { throw 'Fixture helper preparation failed.' }
             $resultPath = Join-Path $directory 'updates/last-result.json'
             for ($attempt = 0; $attempt -lt 450 -and !(Test-Path -LiteralPath $resultPath); $attempt++) { Start-Sleep -Milliseconds 100 }
             if (!(Test-Path -LiteralPath $resultPath)) { throw 'No update process result.' }

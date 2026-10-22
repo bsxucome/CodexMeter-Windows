@@ -1,5 +1,15 @@
 # Windows 发行与更新接入
 
+## 0.7.7 简洁便携包
+
+推荐的 .NET 10 包使用自包含单文件发布，原生依赖按运行时需要释放到系统临时目录；不启用裁剪或额外压缩。根目录固定为 CodexMeter.exe、使用说明.txt 和 docs；Framework 版另保留 CodexMeter.Core.dll 与 CodexMeter.exe.config。说明文档与许可证集中在 docs。见 [0.7.7 发行说明](releases/0.7.7.md)。
+
+打包从编译输出明确选取文件到新的独立目录，.NET 原始发布目录存在未合并依赖时直接报错，不通过丢弃 DLL 伪装成单文件。ZIP 使用正斜杠条目路径并保留中文文件名。Actions 对两个实际包执行结构、哈希及中文／空格路径下五种窗口的启动检查，单文件版另执行更新辅助进程成功、失败回退与篡改拒绝检查。
+
+签名清单仍使用现有产品、运行时与通道标识，逐文件哈希覆盖 EXE、使用说明及全部 docs。Framework 必须有独立 Core DLL；.NET 接受单文件及旧多文件清单，但仍必须有根目录 EXE。首次从旧版切换需手动下载，因为旧版更新器会强制要求 Core DLL。正式签名源未上线，不能由本次包结构调整推断在线更新可用。已有标签与附件不覆盖。
+
+手动调用 sign-binaries.ps1 为 .NET 单文件签署 Authenticode 时传入 -Runtime DotNet；默认 Framework 模式仍要求签署 EXE 和 Core DLL。常规 build.ps1 会自动传递运行时。verify-package.ps1 同样新增 -Runtime Framework／DotNet，默认仍为 Framework，验证目录每次使用新的含中文与空格路径。
+
 ## 0.7.6 项目主页与 GitHub 更新源
 
 “关于与更新”的项目主页、Windows 下载入口指向 bsxucome/CodexMeter-for-Windows，上游链接单独保留。默认更新地址与 Actions 的 windows-update-feed 资产同步机制对齐；保留自定义源、通道及公钥，不自动启用检查或安装。见 [0.7.6 发行说明](releases/0.7.6.md)。远程构建与新版本发布须另行确认。

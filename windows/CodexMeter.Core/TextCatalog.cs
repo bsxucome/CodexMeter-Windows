@@ -161,6 +161,7 @@ RSA 签名公钥 JSON|RSA signing public key JSON
 无法启动更新安装；请检查同级目录的写入权限。|Cannot start installation. Check write permission for sibling directories.
 基于 raycalrui/CodexMeter 的独立 Windows 适配。|An independent Windows adaptation of raycalrui/CodexMeter.
 开源协议与原项目说明见程序目录中的 LICENSE 和 UPSTREAM.md。|See LICENSE and UPSTREAM.md in the application directory.
+开源协议与原项目说明见 docs 目录中的 LICENSE 和 UPSTREAM.md；旧版位于程序目录。|See LICENSE and UPSTREAM.md in the docs folder, or the application directory in older packages.
 额度余额|Credit balance
 重置机会|Reset opportunities
 可用次数：|Available: 

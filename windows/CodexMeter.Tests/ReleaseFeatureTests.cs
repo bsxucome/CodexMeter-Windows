@@ -219,6 +219,25 @@ namespace CodexMeter.Tests
             using (var fixture = new SignedFixture())
             {
                 var release = fixture.Release(); release.VerifyArchive(fixture.Archive); Check(release.Version == "9.9.9", "signed Windows envelope and exact file archive verify");
+                string originalRuntime = (string)fixture.Payload["runtime"];
+                fixture.Payload["runtime"] = "dotnet10-x64";
+                var legacyDotNet = SignedRelease.Verify(fixture.Envelope(), fixture.Public, "stable", "dotnet10-x64");
+                legacyDotNet.VerifyArchive(fixture.Archive);
+                Check(legacyDotNet.Files.Any(f => f.Path == "CodexMeter.Core.dll"), "legacy multi-file dotnet packages remain valid");
+                var originalFiles = fixture.Payload["files"];
+                var singleFiles = legacyDotNet.Files.Where(f => f.Path != "CodexMeter.Core.dll").Select(f => new { path = f.Path, size = f.Size, sha256 = f.Sha256 }).ToArray();
+                string singleArchive = Path.Combine(fixture.Directory, "single.zip"); File.Copy(fixture.Archive, singleArchive);
+                using (var zip = ZipFile.Open(singleArchive, ZipArchiveMode.Update)) zip.GetEntry("CodexMeter.Core.dll").Delete();
+                fixture.Payload["files"] = singleFiles; fixture.Payload["size"] = new FileInfo(singleArchive).Length; fixture.Payload["sha256"] = PortableFiles.Sha256(singleArchive);
+                var singleRelease = SignedRelease.Verify(fixture.Envelope(), fixture.Public, "stable", "dotnet10-x64"); singleRelease.VerifyArchive(singleArchive);
+                Check(!singleRelease.Files.Any(f => f.Path == "CodexMeter.Core.dll"), "signed single-file dotnet package verifies without an external core library");
+                fixture.Payload["runtime"] = "framework-x64";
+                Reject(() => SignedRelease.Verify(fixture.Envelope(), fixture.Public, "stable", "framework-x64"), "Framework still rejects a signed package missing its required core library");
+                fixture.Payload["runtime"] = "dotnet10-x64";
+                fixture.Payload["files"] = singleFiles.Where(f => f.path != "CodexMeter.exe").ToArray();
+                Reject(() => SignedRelease.Verify(fixture.Envelope(), fixture.Public, "stable", "dotnet10-x64"), "single-file packages still require the Windows executable");
+                fixture.Payload["files"] = originalFiles; fixture.Payload["runtime"] = originalRuntime;
+                fixture.Payload["size"] = new FileInfo(fixture.Archive).Length; fixture.Payload["sha256"] = PortableFiles.Sha256(fixture.Archive);
                 var envelope = Json.Parse(fixture.Envelope()); byte[] data = Convert.FromBase64String(Json.Text(envelope, "payload")); data[data.Length / 2] ^= 1; envelope["payload"] = Convert.ToBase64String(data);
                 Reject(() => SignedRelease.Verify(Json.Encode(envelope), fixture.Public, "stable", SignedRelease.CurrentRuntime), "tampered signed payload is rejected before parsing");
                 using (var other = new SignedFixture()) Reject(() => SignedRelease.Verify(fixture.Envelope(), other.Public, "stable", SignedRelease.CurrentRuntime), "a different signing key cannot authorize a release");

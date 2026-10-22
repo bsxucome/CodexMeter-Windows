@@ -54,7 +54,7 @@ try {
         finally { $stream.Dispose(); $sha.Dispose() }
         $files += [ordered]@{ path=$name; size=$entry.Length; sha256=$hash }
     }
-    if (!$names.Contains('CodexMeter.exe') -or !$names.Contains('CodexMeter.Core.dll')) { throw 'Missing Windows application files.' }
+    if (!$names.Contains('CodexMeter.exe') -or ($Runtime -eq 'framework-x64' -and !$names.Contains('CodexMeter.Core.dll'))) { throw 'Missing Windows application files.' }
     $rsa.FromXmlString($privateXml)
     if ($rsa.KeySize -lt 2048 -or $rsa.KeySize -gt 8192) { throw 'RSA key must be 2048 to 8192 bits.' }
     $payload = [ordered]@{ product='CodexMeter.Windows'; channel=$Channel; runtime=$Runtime; version=$Version; url=$url.AbsoluteUri;

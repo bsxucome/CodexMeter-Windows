@@ -30,8 +30,8 @@ if ($Runtime -eq "DotNet") {
         if ($LASTEXITCODE -ne 0) { throw "Tests failed." }
     }
     if ($Publish) {
-        $output = Join-Path $artifactRoot "CodexMeter-win-x64"
-        & $dotnetCommand publish (Join-Path $windowsRoot "CodexMeter.Windows/CodexMeter.Windows.csproj") -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o $output
+        $output = Join-Path $artifactRoot ('publish-dotnet-' + [Guid]::NewGuid().ToString('N'))
+        & $dotnetCommand publish (Join-Path $windowsRoot "CodexMeter.Windows/CodexMeter.Windows.csproj") -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -p:EnableCompressionInSingleFile=false -o $output
         if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
     }
 } else {
@@ -59,26 +59,18 @@ if ($Runtime -eq "DotNet") {
     }
 }
 if ($output) {
-    Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination $output -Force
-    Copy-Item -LiteralPath (Join-Path $windowsRoot "README.md") -Destination (Join-Path $output "README.md") -Force
-    Copy-Item -LiteralPath (Join-Path $projectRoot "UPSTREAM.md") -Destination $output -Force
-    Copy-Item -LiteralPath (Join-Path $windowsRoot "VERIFICATION.md") -Destination $output -Force
-    Copy-Item -LiteralPath (Join-Path $windowsRoot "PARITY.md") -Destination $output -Force
-    Copy-Item -LiteralPath (Join-Path $windowsRoot "RELEASES.md") -Destination $output -Force
-    Copy-Item -LiteralPath (Join-Path $windowsRoot "ACCEPTANCE.md") -Destination $output -Force
+    if ($Runtime -eq 'Framework') {
+        # Retain license/documentation access when running an unbundled developer build.
+        Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination $output -Force
+        Copy-Item -LiteralPath (Join-Path $projectRoot 'UPSTREAM.md') -Destination $output -Force
+        foreach ($name in @('README.md','VERIFICATION.md','PARITY.md','RELEASES.md','ACCEPTANCE.md')) { Copy-Item -LiteralPath (Join-Path $windowsRoot $name) -Destination $output -Force }
+    }
     if ($Publish) {
         if ($SigningCertificatePath) {
             if (!$TimestampServer) { throw "A timestamp server is required for Authenticode signing." }
-            & (Join-Path $PSScriptRoot 'sign-binaries.ps1') -Directory $output -CertificatePath $SigningCertificatePath -TimestampServer $TimestampServer
+            & (Join-Path $PSScriptRoot 'sign-binaries.ps1') -Directory $output -CertificatePath $SigningCertificatePath -TimestampServer $TimestampServer -Runtime $Runtime
         }
-        $packageFiles = @(Get-ChildItem -LiteralPath $output | Where-Object { $_.Name -notlike "*Tests*" -and $_.Extension -ne ".pdb" -and $_.Name -notin @("screenshots", "test-data") })
-        # Explicit file selection prevents test executables and smoke artifacts entering releases.
-        $releaseRuntime = if ($Runtime -eq 'Framework') { 'framework-x64' } else { 'dotnet10-x64' }
-        $zip = Join-Path $artifactRoot "CodexMeter-Windows-$releaseVersion-$releaseRuntime.zip"
-        Compress-Archive -LiteralPath $packageFiles.FullName -DestinationPath $zip -Force
-        $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-        [IO.File]::WriteAllText($zip + '.sha256', $hash + '  ' + [IO.Path]::GetFileName($zip) + "`n", (New-Object Text.UTF8Encoding($false)))
-        Write-Output "Package: $zip"
+        & (Join-Path $PSScriptRoot 'package-portable.ps1') -Runtime $Runtime -InputDirectory $output -ArtifactDirectory $artifactRoot
     }
     Write-Output "Output: $output"
 }

@@ -6,6 +6,8 @@
 
 ## Provenance records
 
+Windows portable packaging follow-up, 2026-10-22: 0.7.7 publishes the recommended .NET 10 build as a self-contained single executable with native-library extraction, without trimming or bundle compression. Portable documentation moves under docs with a bilingual quick-start file at the root; Framework retains its required DLL/config. Signed manifests continue to enforce exact files/hashes and runtime identity, while allowing .NET single-file and legacy multi-file layouts. First-time migration from older updaters requires manual download. This changes Windows delivery and validation, not upstream parity; hosted single-file acceptance is reported separately from local Framework results.
+
 Documentation preview refresh, 2026-10-21: both README entries now show light-theme main, Settings and Advanced Appearance screenshots captured serially from the 0.7.6 isolated smoke preview. All three were visually inspected. No application logic, version or upstream scope changes.
 
 Windows CI follow-up, 2026-10-21: main run 39615050341 failed in the 0.7.6 release UI smoke immediately after InvokePattern.Invoke. Source checks now wait for the exact value with a bounded deadline and fresh providers, and reuse existing owned-window/control readiness. An owned delayed WPF fixture covers stale reads, provider replacement, wrong values and missing controls. This changes validation scripts only; no updater trust policy or upstream functionality changes. Keep the unpublished 0.7.6 version and existing tags.

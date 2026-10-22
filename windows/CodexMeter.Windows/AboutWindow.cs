@@ -12,7 +12,7 @@ namespace CodexMeter.Windows
             var version = Theme.Label("CodexMeter for Windows  " + AppVersion.Value, 13, Theme.Text); version.FontWeight = FontWeights.SemiBold; Body.Children.Add(version);
             Body.Children.Add(Theme.Label("Windows 11 x64 · " + SignedRelease.CurrentRuntime, 11, Theme.Muted));
             Body.Children.Add(Theme.Label("基于 raycalrui/CodexMeter 的独立 Windows 适配。", 11, Theme.Muted));
-            Body.Children.Add(Theme.Label("开源协议与原项目说明见程序目录中的 LICENSE 和 UPSTREAM.md。", 11, Theme.Muted));
+            Body.Children.Add(Theme.Label("开源协议与原项目说明见 docs 目录中的 LICENSE 和 UPSTREAM.md；旧版位于程序目录。", 11, Theme.Muted));
             Body.Children.Add(Theme.Label("额度与历史保存在本机；启用远程提醒后，所选服务只接收窗口名称和观测到的额度变化。本应用不复制登录凭据、不记录邮箱，也不收集分析数据。", 11, Theme.Muted));
             var links = new WrapPanel();
             var home = ActionButton("项目主页", (s, e) => Open(WindowsReleaseSource.ProjectHome));
@@ -20,7 +20,7 @@ namespace CodexMeter.Windows
             var releases = ActionButton("下载 Windows 版本", (s, e) => Open(WindowsReleaseSource.LatestRelease));
             System.Windows.Automation.AutomationProperties.SetAutomationId(releases, "Update.Releases"); links.Children.Add(releases);
             links.Children.Add(ActionButton("原项目主页", (s, e) => Open(WindowsReleaseSource.UpstreamHome)));
-            var license = ActionButton("查看开源协议", (s, e) => Open(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LICENSE"))); license.IsEnabled = !preview; links.Children.Add(license);
+            var license = ActionButton("查看开源协议", (s, e) => Open(LicensePath())); license.IsEnabled = !preview; links.Children.Add(license);
             var data = ActionButton("打开本地数据目录", (s, e) => Open(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexMeter"))); data.IsEnabled = !preview; links.Children.Add(data);
             Body.Children.Add(links);
             Section("Windows 更新设置");
@@ -85,6 +85,11 @@ namespace CodexMeter.Windows
             System.Windows.Automation.AutomationProperties.SetAutomationId(box, id); Body.Children.Add(box); return box;
         }
         private CheckBox Toggle(string text, bool value) { return new CheckBox { Content = L.T(text), IsChecked = value, Foreground = Theme.Text, Margin = new Thickness(0, 8, 0, 8) }; }
+        private static string LicensePath()
+        {
+            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docs", "LICENSE");
+            return System.IO.File.Exists(path) ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LICENSE");
+        }
         private static void Open(string value)
         { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(value) { UseShellExecute = true }); } catch (System.ComponentModel.Win32Exception) { } catch (System.IO.IOException) { } }
     }

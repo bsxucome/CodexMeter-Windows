@@ -51,7 +51,7 @@ CodexMeter for Windows 是一款面向 **Windows 11 x64** 的 Codex 额度监控
 
 | 下载包 | 适用情况 |
 | --- | --- |
-| `dotnet10-x64.zip` | **推荐**：自带 .NET 运行时，无需单独安装 .NET。 |
+| `dotnet10-x64.zip` | **推荐**：自带 .NET 运行时的单文件版，无需单独安装 .NET。 |
 | `framework-x64.zip` | 体积更小，需要 .NET Framework 4.8 或更新版本。 |
 
 1. 安装 Windows 原生 Codex CLI，并在终端运行 `codex login` 完成登录。
@@ -60,6 +60,8 @@ CodexMeter for Windows 是一款面向 **Windows 11 x64** 的 Codex 额度监控
 4. 按需要选择额度窗口、显示样式、语言和提醒方式。
 
 每个下载包均附有 SHA-256 校验文件。升级时先退出旧版，再将新版完整解压到独立目录；偏好设置与历史记录保存在当前用户的本地应用数据目录。
+
+从 0.7.7 起，推荐包根目录仅包含 `CodexMeter.exe`、`使用说明.txt` 和 `docs` 文档文件夹，双击 EXE 即可启动。兼容版另保留必需的 DLL 与配置文件，请勿删除。单文件版体积仍包含运行时，首次启动可能向系统临时目录释放依赖；从旧版首次切换请手动下载。
 
 更多配置、快捷操作和源码构建方法见 **[使用与构建指南](windows/README.md)**。
 

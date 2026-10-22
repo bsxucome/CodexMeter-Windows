@@ -52,7 +52,9 @@ try {
             $env:BUILD_RUNTIME = $runtime
             $suffix = if ($runtime -eq 'Framework') { 'framework-x64' } else { 'dotnet10-x64' }
             $archive = Join-Path $fixture ("windows/artifacts/CodexMeter-Windows-$selectedVersion-$suffix.zip")
-            Compress-Archive -LiteralPath @((Join-Path $fixture 'package/CodexMeter.exe'),(Join-Path $fixture 'package/CodexMeter.Core.dll')) -DestinationPath $archive
+            $packageFiles = @((Join-Path $fixture 'package/CodexMeter.exe'))
+            if ($runtime -eq 'Framework') { $packageFiles += Join-Path $fixture 'package/CodexMeter.Core.dll' }
+            Compress-Archive -LiteralPath $packageFiles -DestinationPath $archive
             Run-SigningStep $true
             $envelope = ConvertFrom-Json -InputObject ([IO.File]::ReadAllText((Join-Path $fixture "windows/artifacts/$channel-$suffix.json")))
             $bytes = [Convert]::FromBase64String($envelope.payload)
@@ -60,6 +62,16 @@ try {
             $payload = ConvertFrom-Json -InputObject ([Text.Encoding]::UTF8.GetString($bytes))
             if ($payload.runtime -ne $suffix -or $payload.version -ne $selectedVersion -or $payload.channel -ne $channel -or !(Test-Path -LiteralPath (Join-Path $fixture "windows/artifacts/public-key-$suffix.json"))) { throw 'Workflow feed metadata or public key is incorrect.' }
             Write-Output ('PASS actual signing workflow: test-only RSA ' + $channel + '/' + $runtime)
+            if ($runtime -eq 'DotNet') {
+                $env:BUILD_RUNTIME = 'Framework'
+                $frameworkArchive = Join-Path $fixture ("windows/artifacts/CodexMeter-Windows-$selectedVersion-framework-x64.zip")
+                $backup = $frameworkArchive + '.fixture-backup'; Copy-Item -LiteralPath $frameworkArchive -Destination $backup
+                try {
+                    Copy-Item -LiteralPath $archive -Destination $frameworkArchive -Force
+                    Run-SigningStep $false
+                    Write-Output 'PASS Framework signing refuses a single-file package missing its core library'
+                } finally { Copy-Item -LiteralPath $backup -Destination $frameworkArchive -Force; Remove-Item -LiteralPath $backup }
+            }
         }
     }
 } finally {
